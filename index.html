@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Online Hasil Belajar Siswa</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React & React DOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Recharts -->
+  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SheetJS (xlsx) for Import/Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+    const { 
+      LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+    } = Recharts;
+
+    // List 11 Mata Pelajaran
+    const SUBJECT_LIST = [
+      'Bahasa Indonesia', 'Bahasa Inggris', 'Matematika', 'Fisika', 'Kimia',
+      'Biologi', 'Ekonomi', 'Sosiologi', 'Geografi', 'Sejarah', 'Bahasa Arab'
+    ];
+
+    // Initial Mock Database
+    const INITIAL_STUDENTS = [
+      {
+        id: '1',
+        nama: 'Adhyasta Fauqo Afham Kunaufi',
+        nomor_peserta: '910303',
+        nisn: '0051234567',
+        kelas: 'X C',
+        asal_sekolah: 'SMA Negeri 1',
+        placement: 357,
+        peringkat: 12,
+        kelompok_capaian: 'Belum mengikuti TO 3',
+        scores: {
+          TO1: { 'Bahasa Indonesia': 75, 'Bahasa Inggris': 60, 'Matematika': 50, 'Fisika': 40, 'Kimia': 45, 'Biologi': 55, 'Ekonomi': 60, 'Sosiologi': 65, 'Geografi': 70, 'Sejarah': 65, 'Bahasa Arab': 80 },
+          TO2: { 'Bahasa Indonesia': 80, 'Bahasa Inggris': 70, 'Matematika': 65, 'Fisika': 55, 'Kimia': 60, 'Biologi': 70, 'Ekonomi': 75, 'Sosiologi': 75, 'Geografi': 80, 'Sejarah': 75, 'Bahasa Arab': 85 },
+          TO3: null
+        }
+      },
+      {
+        id: '2',
+        nama: 'Siti Nur Aisyah',
+        nomor_peserta: '910304',
+        nisn: '0051234568',
+        kelas: 'X A',
+        asal_sekolah: 'SMA Negeri 1',
+        placement: 120,
+        peringkat: 2,
+        kelompok_capaian: 'Sangat Baik',
+        scores: {
+          TO1: { 'Bahasa Indonesia': 85, 'Bahasa Inggris': 80, 'Matematika': 75, 'Fisika': 70, 'Kimia': 75, 'Biologi': 80, 'Ekonomi': 85, 'Sosiologi': 85, 'Geografi': 80, 'Sejarah': 85, 'Bahasa Arab': 90 },
+          TO2: { 'Bahasa Indonesia': 88, 'Bahasa Inggris': 85, 'Matematika': 82, 'Fisika': 78, 'Kimia': 80, 'Biologi': 85, 'Ekonomi': 88, 'Sosiologi': 90, 'Geografi': 85, 'Sejarah': 88, 'Bahasa Arab': 92 },
+          TO3: { 'Bahasa Indonesia': 92, 'Bahasa Inggris': 90, 'Matematika': 88, 'Fisika': 85, 'Kimia': 86, 'Biologi': 90, 'Ekonomi': 92, 'Sosiologi': 94, 'Geografi': 90, 'Sejarah': 91, 'Bahasa Arab': 95 }
+        }
+      },
+      {
+        id: '3',
+        nama: 'Muhammad Rizky Pratama',
+        nomor_peserta: '910305',
+        nisn: '0051234569',
+        kelas: 'X B',
+        asal_sekolah: 'SMA Negeri 1',
+        placement: 210,
+        peringkat: 5,
+        kelompok_capaian: 'Baik',
+        scores: {
+          TO1: { 'Bahasa Indonesia': 70, 'Bahasa Inggris': 65, 'Matematika': 60, 'Fisika': 55, 'Kimia': 58, 'Biologi': 62, 'Ekonomi': 70, 'Sosiologi': 68, 'Geografi': 72, 'Sejarah': 70, 'Bahasa Arab': 75 },
+          TO2: { 'Bahasa Indonesia': 75, 'Bahasa Inggris': 72, 'Matematika': 68, 'Fisika': 62, 'Kimia': 65, 'Biologi': 70, 'Ekonomi': 76, 'Sosiologi': 74, 'Geografi': 78, 'Sejarah': 75, 'Bahasa Arab': 80 },
+          TO3: { 'Bahasa Indonesia': 80, 'Bahasa Inggris': 78, 'Matematika': 74, 'Fisika': 70, 'Kimia': 72, 'Biologi': 78, 'Ekonomi': 82, 'Sosiologi': 80, 'Geografi': 82, 'Sejarah': 80, 'Bahasa Arab': 85 }
+        }
+      },
+      {
+        id: '4',
+        nama: 'Aulia Rahmawati',
+        nomor_peserta: '910306',
+        nisn: '0051234570',
+        kelas: 'X C',
+        asal_sekolah: 'SMA Negeri 1',
+        placement: 400,
+        peringkat: 25,
+        kelompok_capaian: 'Cukup',
+        scores: {
+          TO1: { 'Bahasa Indonesia': 60, 'Bahasa Inggris': 55, 'Matematika': 45, 'Fisika': 40, 'Kimia': 42, 'Biologi': 50, 'Ekonomi': 55, 'Sosiologi': 58, 'Geografi': 60, 'Sejarah': 58, 'Bahasa Arab': 65 },
+          TO2: { 'Bahasa Indonesia': 65, 'Bahasa Inggris': 60, 'Matematika': 52, 'Fisika': 48, 'Kimia': 50, 'Biologi': 58, 'Ekonomi': 62, 'Sosiologi': 64, 'Geografi': 65, 'Sejarah': 62, 'Bahasa Arab': 70 },
+          TO3: { 'Bahasa Indonesia': 68, 'Bahasa Inggris': 64, 'Matematika': 58, 'Fisika': 52, 'Kimia': 55, 'Biologi': 62, 'Ekonomi': 65, 'Sosiologi': 68, 'Geografi': 70, 'Sejarah': 66, 'Bahasa Arab': 72 }
+        }
+      }
+    ];
+
+    // Helper: Hitung Rata-rata 11 Mapel
+    function calcAverage(periodScores) {
+      if (!periodScores) return null;
+      const values = Object.values(periodScores);
+      if (values.length === 0) return null;
+      const sum = values.reduce((a, b) => a + Number(b), 0);
+      return Number((sum / 11).toFixed(1));
+    }
+
+    // Helper: Hitung Kelompok Capaian Automatis berdasarkan TO3 (atau TO2/TO1)
+    function calcCapaian(avgTO3) {
+      if (avgTO3 === null) return 'Belum mengikuti TO 3';
+      if (avgTO3 >= 85) return 'Sangat Baik';
+      if (avgTO3 >= 70) return 'Baik';
+      if (avgTO3 >= 55) return 'Cukup';
+      return 'Perlu Peningkatan';
+    }
+
+    function App() {
+      const [students, setStudents] = useState(() => {
+        const saved = localStorage.getItem('laporan_siswa_db');
+        return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+      });
+
+      const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'report', 'admin', 'login', 'lookup'
+      const [selectedStudentId, setSelectedStudentId] = useState(null);
+      const [isAdmin, setIsAdmin] = useState(false);
+      const [lastUpdated, setLastUpdated] = useState('');
+
+      // Filter States
+      const [searchQuery, setSearchQuery] = useState('');
+      const [selectedClass, setSelectedClass] = useState('Semua Kelas');
+      const [selectedCapaian, setSelectedCapaian] = useState('Semua Kelompok Capaian');
+      const [selectedStatus, setSelectedStatus] = useState('Semua Status');
+
+      useEffect(() => {
+        localStorage.setItem('laporan_siswa_db', JSON.stringify(students));
+        const now = new Date();
+        setLastUpdated(now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + ' - ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB');
+      }, [students]);
+
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+
+      // Olah Data Siswa + Auto Recalculate Rata-rata & Peringkat
+      const processedStudents = useMemo(() => {
+        const calculated = students.map(s => {
+          const to1 = calcAverage(s.scores.TO1);
+          const to2 = calcAverage(s.scores.TO2);
+          const to3 = calcAverage(s.scores.TO3);
+          const status = to3 !== null ? 'Sudah Mengikuti' : 'Belum Mengikuti';
+          const kelompokCapaian = calcCapaian(to3);
+
+          let posDiff = 'Belum dapat dibandingkan';
+          if (to2 !== null && to3 !== null) {
+            if (to3 > to2) posDiff = 'Naik';
+            else if (to3 < to2) posDiff = 'Turun';
+            else posDiff = 'Tetap';
+          }
+
+          return { ...s, to1, to2, to3, status, posDiff, kelompok_capaian: kelompokCapaian };
+        });
+
+        // Calculate Rank based on Latest Score (TO3 > TO2 > TO1)
+        const sorted = [...calculated].sort((a, b) => {
+          const scoreA = a.to3 ?? a.to2 ?? a.to1 ?? 0;
+          const scoreB = b.to3 ?? b.to2 ?? b.to1 ?? 0;
+          return scoreB - scoreA;
+        });
+
+        return calculated.map(s => {
+          const rank = sorted.findIndex(item => item.id === s.id) + 1;
+          return { ...s, peringkat: rank };
+        });
+      }, [students]);
+
+      // Filtered Students
+      const filteredStudents = useMemo(() => {
+        return processedStudents.filter(s => {
+          const matchSearch = s.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              s.nomor_peserta.includes(searchQuery);
+          const matchClass = selectedClass === 'Semua Kelas' || s.kelas === selectedClass;
+          const matchCapaian = selectedCapaian === 'Semua Kelompok Capaian' || s.kelompok_capaian === selectedCapaian;
+          const matchStatus = selectedStatus === 'Semua Status' || s.status === selectedStatus;
+
+          return matchSearch && matchClass && matchCapaian && matchStatus;
+        });
+      }, [processedStudents, searchQuery, selectedClass, selectedCapaian, selectedStatus]);
+
+      // Statistics
+      const stats = useMemo(() => {
+        const total = processedStudents.length;
+        const sudah = processedStudents.filter(s => s.status === 'Sudah Mengikuti').length;
+        const belum = total - sudah;
+        const validTO3 = processedStudents.filter(s => s.to3 !== null).map(s => s.to3);
+        const avgScore = validTO3.length > 0 
+          ? (validTO3.reduce((a, b) => a + b, 0) / validTO3.length).toFixed(1) 
+          : '0.0';
+        const classes = new Set(processedStudents.map(s => s.kelas)).size;
+
+        return { total, sudah, belum, avgScore, classes };
+      }, [processedStudents]);
+
+      // Handlers
+      const openReport = (id) => {
+        setSelectedStudentId(id);
+        setCurrentView('report');
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col justify-between">
+          {/* NAVBAR */}
+          <header className="bg-emerald-900 text-white shadow-lg sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 flex justify-between items-center">
+              <div 
+                className="flex items-center gap-3 cursor-pointer"
+                onClick={() => setCurrentView('dashboard')}
+              >
+                <div className="bg-emerald-700 p-2 rounded-lg">
+                  <i data-lucide="graduation-cap" className="w-6 h-6 text-emerald-200"></i>
+                </div>
+                <div>
+                  <h1 className="font-extrabold text-sm sm:text-base tracking-wide uppercase">Laporan Online Hasil Belajar</h1>
+                  <p className="text-[10px] text-emerald-200">Sistem Informasi Akademik Sekolah</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 sm:gap-3 text-xs">
+                <button 
+                  onClick={() => setCurrentView('dashboard')}
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition ${currentView === 'dashboard' ? 'bg-emerald-700 text-white' : 'hover:bg-emerald-800 text-emerald-100'}`}
+                >
+                  Dashboard
+                </button>
+
+                <button 
+                  onClick={() => setCurrentView('lookup')}
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition ${currentView === 'lookup' ? 'bg-emerald-700 text-white' : 'hover:bg-emerald-800 text-emerald-100'}`}
+                >
+                  Cari Siswa
+                </button>
+
+                {isAdmin ? (
+                  <button 
+                    onClick={() => setCurrentView('admin')}
+                    className={`px-3 py-1.5 rounded-lg font-semibold transition bg-amber-500 hover:bg-amber-600 text-slate-900`}
+                  >
+                    Admin Panel
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setCurrentView('login')}
+                    className="px-3 py-1.5 rounded-lg font-semibold bg-emerald-800 hover:bg-emerald-700 text-emerald-100 border border-emerald-700 transition"
+                  >
+                    Login Admin
+                  </button>
+                )}
+              </div>
+            </div>
+          </header>
+
+          {/* MAIN CONTENT AREA */}
+          <main className="mb-auto">
+            {currentView === 'dashboard' && (
+              <DashboardView 
+                stats={stats}
+                lastUpdated={lastUpdated}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                selectedClass={selectedClass}
+                setSelectedClass={setSelectedClass}
+                selectedCapaian={selectedCapaian}
+                setSelectedCapaian={setSelectedCapaian}
+                selectedStatus={selectedStatus}
+                setSelectedStatus={setSelectedStatus}
+                filteredStudents={filteredStudents}
+                allStudents={processedStudents}
+                openReport={openReport}
+              />
+            )}
+
+            {currentView === 'report' && (
+              <ReportView 
+                student={processedStudents.find(s => s.id === selectedStudentId)}
+                allStudentsCount={processedStudents.length}
+                onBack={() => setCurrentView('dashboard')}
+              />
+            )}
+
+            {currentView === 'lookup' && (
+              <LookupView 
+                students={processedStudents}
+                openReport={openReport}
+              />
+            )}
+
+            {currentView === 'login' && (
+              <LoginView 
+                onLogin={() => {
+                  setIsAdmin(true);
+                  setCurrentView('admin');
+                }}
+              />
+            )}
+
+            {currentView === 'admin' && (
+              <AdminView 
+                students={students}
+                setStudents={setStudents}
+                onLogout={() => {
+                  setIsAdmin(false);
+                  setCurrentView('dashboard');
+                }}
+              />
+            )}
+          </main>
+
+          {/* FOOTER */}
+          <footer className="bg-slate-900 text-slate-400 py-6 text-center text-xs border-t border-slate-800 mt-12">
+            <div className="max-w-7xl mx-auto px-4 space-y-1">
+              <p className="font-semibold text-slate-300">Laporan Online Hasil Belajar Siswa</p>
+              <p>© 2026 Sistem Laporan Online Sekolah. All rights reserved.</p>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // VIEW: DASHBOARD
+    // ==========================================
+    function DashboardView({
+      stats, lastUpdated, searchQuery, setSearchQuery, selectedClass, setSelectedClass,
+      selectedCapaian, setSelectedCapaian, selectedStatus, setSelectedStatus,
+      filteredStudents, allStudents, openReport
+    }) {
+      const uniqueClasses = Array.from(new Set(allStudents.map(s => s.kelas)));
+
+      const handleReset = () => {
+        setSearchQuery('');
+        setSelectedClass('Semua Kelas');
+        setSelectedCapaian('Semua Kelompok Capaian');
+        setSelectedStatus('Semua Status');
+      };
+
+      return (
+        <div className="pb-12">
+          {/* BANNER HEADER */}
+          <div className="bg-emerald-800 text-white pt-8 pb-16 px-4 sm:px-8 shadow-inner">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">LAPORAN ONLINE HASIL BELAJAR SISWA</h1>
+                <p className="text-emerald-100 text-xs sm:text-sm mt-1">Pantau perkembangan hasil belajar siswa secara berkala dan terukur.</p>
+              </div>
+              <div className="bg-emerald-950/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-emerald-700/50 text-xs text-emerald-200 shadow-sm">
+                Data terakhir diperbarui: <span className="font-semibold text-white">{lastUpdated}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 -mt-8">
+            {/* STATISTIK CARDS */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-6">
+              <StatCard title="TOTAL SISWA" value={stats.total} icon="users" color="text-emerald-600" />
+              <StatCard title="SUDAH MENGIKUTI" value={stats.sudah} icon="check-circle-2" color="text-teal-600" />
+              <StatCard title="BELUM MENGIKUTI" value={stats.belum} icon="x-circle" color="text-amber-600" />
+              <StatCard title="RATA-RATA NILAI" value={stats.avgScore} icon="award" color="text-amber-500" />
+              <StatCard title="JUMLAH KELAS" value={stats.classes} icon="book-open" color="text-indigo-600" />
+            </div>
+
+            {/* FILTER & PENCARIAN */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 mb-6 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="relative lg:col-span-2">
+                  <i data-lucide="search" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                  <input
+                    type="text"
+                    placeholder="Cari nama atau nomor peserta..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                  />
+                </div>
+
+                <select
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option>Semua Kelas</option>
+                  {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+
+                <select
+                  value={selectedCapaian}
+                  onChange={(e) => setSelectedCapaian(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option>Semua Kelompok Capaian</option>
+                  <option>Sangat Baik</option>
+                  <option>Baik</option>
+                  <option>Cukup</option>
+                  <option>Perlu Peningkatan</option>
+                  <option>Belum mengikuti TO 3</option>
+                </select>
+
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option>Semua Status</option>
+                  <option>Sudah Mengikuti</option>
+                  <option>Belum Mengikuti</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={handleReset}
+                  className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+                >
+                  <i data-lucide="rotate-ccw" className="w-3.5 h-3.5"></i> Reset Filter
+                </button>
+              </div>
+            </div>
+
+            {/* TABEL DAFTAR SISWA */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+              <div className="p-4 sm:p-5 border-b border-slate-100 flex justify-between items-center">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Daftar Siswa</h2>
+                  <p className="text-xs text-slate-500">Klik 'Buka Laporan' untuk melihat analisis hasil belajar individual.</p>
+                </div>
+                <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                  Total: {filteredStudents.length} Siswa
+                </span>
+              </div>
+
+              {/* DESKTOP STICKY SCROLLABLE TABLE */}
+              <div className="hidden md:block relative h-[500px] overflow-y-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead className="bg-slate-100 text-slate-700 font-bold sticky top-0 z-10 shadow-sm uppercase tracking-wider text-[11px]">
+                    <tr>
+                      <th className="p-3.5 border-b">NAMA</th>
+                      <th className="p-3.5 border-b">NO PESERTA</th>
+                      <th className="p-3.5 border-b">KELAS</th>
+                      <th className="p-3.5 border-b text-center">TO 1</th>
+                      <th className="p-3.5 border-b text-center">TO 2</th>
+                      <th className="p-3.5 border-b text-center">TO 3</th>
+                      <th className="p-3.5 border-b text-center">POSISI TO 2 → 3</th>
+                      <th className="p-3.5 border-b text-center">PLACEMENT</th>
+                      <th className="p-3.5 border-b text-center">PERINGKAT</th>
+                      <th className="p-3.5 border-b">KELOMPOK CAPAIAN</th>
+                      <th className="p-3.5 border-b text-center">AKSI</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredStudents.length === 0 ? (
+                      <tr>
+                        <td colSpan={11} className="text-center py-12 text-slate-400">
+                          Data siswa tidak ditemukan.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredStudents.map((siswa) => (
+                        <tr key={siswa.id} className="hover:bg-slate-50/80 transition">
+                          <td className="p-3.5 font-bold text-slate-900">{siswa.nama}</td>
+                          <td className="p-3.5 text-slate-600 font-mono">{siswa.nomor_peserta}</td>
+                          <td className="p-3.5 text-slate-600 font-semibold">{siswa.kelas}</td>
+                          <td className="p-3.5 text-center">{siswa.to1 ?? '-'}</td>
+                          <td className="p-3.5 text-center">{siswa.to2 ?? '-'}</td>
+                          <td className="p-3.5 text-center font-bold text-emerald-700">{siswa.to3 ?? '-'}</td>
+                          <td className="p-3.5 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              siswa.posDiff === 'Naik' ? 'bg-emerald-100 text-emerald-800' :
+                              siswa.posDiff === 'Turun' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {siswa.posDiff}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-center text-slate-600 font-medium">{siswa.placement || '-'}</td>
+                          <td className="p-3.5 text-center font-bold text-slate-800">{siswa.peringkat || '-'}</td>
+                          <td className="p-3.5">
+                            <CapaianBadge text={siswa.kelompok_capaian} />
+                          </td>
+                          <td className="p-3.5 text-center">
+                            <button
+                              onClick={() => openReport(siswa.id)}
+                              className="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1 rounded-lg text-[11px] font-bold transition shadow-sm"
+                            >
+                              Buka Laporan
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* MOBILE CARD VIEW */}
+              <div className="block md:hidden p-4 space-y-3 max-h-[500px] overflow-y-auto">
+                {filteredStudents.length === 0 ? (
+                  <p className="text-center py-8 text-slate-400 text-xs">Data siswa tidak ditemukan.</p>
+                ) : (
+                  filteredStudents.map((siswa) => (
+                    <div key={siswa.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 shadow-sm">
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <h3 className="font-extrabold text-slate-900 text-sm">{siswa.nama}</h3>
+                          <p className="text-xs text-slate-500 font-mono mt-0.5">No: {siswa.nomor_peserta} | Kelas: {siswa.kelas}</p>
+                        </div>
+                        <CapaianBadge text={siswa.kelompok_capaian} />
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 bg-white p-2.5 rounded-lg border border-slate-200/60 text-center text-xs">
+                        <div><span className="text-slate-400 block text-[10px]">TO 1</span><span className="font-bold">{siswa.to1 ?? '-'}</span></div>
+                        <div><span className="text-slate-400 block text-[10px]">TO 2</span><span className="font-bold">{siswa.to2 ?? '-'}</span></div>
+                        <div><span className="text-slate-400 block text-[10px]">TO 3</span><span className="font-black text-emerald-700">{siswa.to3 ?? '-'}</span></div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs pt-1">
+                        <span className="text-slate-500">Placement: <strong>{siswa.placement || '-'}</strong> | Rank: <strong>{siswa.peringkat || '-'}</strong></span>
+                        <button
+                          onClick={() => openReport(siswa.id)}
+                          className="bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+                        >
+                          Buka Laporan
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // VIEW: LAPORAN INDIVIDUAL SISWA
+    // ==========================================
+    function ReportView({ student, allStudentsCount, onBack }) {
+      if (!student) return <div className="p-8 text-center text-slate-500">Siswa tidak ditemukan.</div>;
+
+      const to1Avg = student.to1;
+      const to2Avg = student.to2;
+      const to3Avg = student.to3;
+
+      let diffTO1toTO2 = (to1Avg !== null && to2Avg !== null) ? Number((to2Avg - to1Avg).toFixed(1)) : null;
+      let diffTO2toTO3 = (to2Avg !== null && to3Avg !== null) ? Number((to3Avg - to2Avg).toFixed(1)) : null;
+
+      let percentChange = null;
+      if (to2Avg !== null && to3Avg !== null && to2Avg > 0) {
+        percentChange = (((to3Avg - to2Avg) / to2Avg) * 100).toFixed(1);
+      }
+
+      const chartData = [
+        { name: 'TO 1', Nilai: to1Avg },
+        { name: 'TO 2', Nilai: to2Avg },
+        { name: 'TO 3', Nilai: to3Avg }
+      ];
+
+      return (
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+          {/* HEADER AKSI */}
+          <div className="flex justify-between items-center print:hidden">
+            <button
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-white border border-slate-200 px-3 py-2 rounded-xl transition shadow-sm"
+            >
+              <i data-lucide="arrow-left" className="w-4 h-4"></i> Kembali ke Dashboard
+            </button>
+
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 bg-emerald-800 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-900 transition shadow-sm"
+            >
+              <i data-lucide="printer" className="w-4 h-4"></i> Cetak Laporan PDF
+            </button>
+          </div>
+
+          {/* CARD PROFIL SISWA */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
+            <div className="border-b border-slate-100 pb-4 mb-4 flex justify-between items-start">
+              <div>
+                <span className="text-[10px] font-extrabold text-emerald-700 tracking-widest uppercase">LAPORAN HASIL BELAJAR SISWA</span>
+                <h1 className="text-2xl font-black text-slate-900 mt-0.5">{student.nama}</h1>
+              </div>
+              <CapaianBadge text={student.kelompok_capaian} />
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+              <div><span className="text-slate-400 block text-[10px]">Nomor Peserta</span><strong className="font-mono">{student.nomor_peserta}</strong></div>
+              <div><span className="text-slate-400 block text-[10px]">NISN</span><strong>{student.nisn || '-'}</strong></div>
+              <div><span className="text-slate-400 block text-[10px]">Kelas</span><strong>{student.kelas}</strong></div>
+              <div><span className="text-slate-400 block text-[10px]">Asal Sekolah</span><strong>{student.asal_sekolah || '-'}</strong></div>
+            </div>
+          </div>
+
+          {/* RINGKASAN & GRAFIK PERKEMBANGAN */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between space-y-4">
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Ringkasan Nilai</h3>
+              
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                  <span className="text-[10px] text-slate-400 font-bold block">TO 1</span>
+                  <span className="text-lg font-black text-slate-700">{to1Avg ?? '-'}</span>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                  <span className="text-[10px] text-slate-400 font-bold block">TO 2</span>
+                  <span className="text-lg font-black text-slate-700">{to2Avg ?? '-'}</span>
+                </div>
+                <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
+                  <span className="text-[10px] text-emerald-700 font-bold block">TO 3</span>
+                  <span className="text-lg font-black text-emerald-800">{to3Avg ?? '-'}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-3 space-y-2 text-xs">
+                <div className="flex justify-between"><span className="text-slate-500">Peringkat Sekolah:</span> <strong>{student.peringkat} dari {allStudentsCount} siswa</strong></div>
+                <div className="flex justify-between"><span className="text-slate-500">Placement:</span> <strong>{student.placement || '-'}</strong></div>
+                <div className="flex justify-between"><span className="text-slate-500">Kelompok Capaian:</span> <strong className="text-emerald-700">{student.kelompok_capaian}</strong></div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">Grafik Perkembangan Rata-rata Nilai</h3>
+              <div className="h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
+                    <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={11} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="Nilai" stroke="#059669" strokeWidth={3} dot={{ r: 6, fill: '#059669' }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* ANALISIS PERKEMBANGAN AUTOMATIS */}
+          <div className="bg-emerald-900 text-white p-6 rounded-2xl shadow-sm space-y-2">
+            <h3 className="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="trending-up" className="w-4 h-4"></i> Analisis Perkembangan
+            </h3>
+            <p className="text-xs sm:text-sm text-emerald-50 leading-relaxed">
+              {diffTO2toTO3 !== null ? (
+                diffTO2toTO3 >= 0 ? (
+                  `Nilai siswa mengalami peningkatan sebesar ${diffTO2toTO3} poin (${percentChange}%) dari TO 2 ke TO 3. Hasil ini menunjukkan perkembangan belajar yang positif.`
+                ) : (
+                  `Nilai siswa mengalami penurunan sebesar ${Math.abs(diffTO2toTO3)} poin dari TO 2 ke TO 3. Disarankan untuk melakukan bimbingan khusus pada mata pelajaran yang mengalami penurunan.`
+                )
+              ) : diffTO1toTO2 !== null ? (
+                `Siswa telah mengikuti TO 1 dan TO 2 dengan perubahan sebesar ${diffTO1toTO2} poin. Belum mengikuti TO 3.`
+              ) : (
+                `Siswa belum memiliki data perbandingan Try Out yang cukup.`
+              )}
+            </p>
+          </div>
+
+          {/* TABEL ANALISIS 11 MATA PELAJARAN */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+            <div className="p-4 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900">Analisis 11 Mata Pelajaran</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                  <tr>
+                    <th className="p-3">Mata Pelajaran</th>
+                    <th className="p-3 text-center">TO 1</th>
+                    <th className="p-3 text-center">TO 2</th>
+                    <th className="p-3 text-center">TO 3</th>
+                    <th className="p-3 text-center">Perubahan (TO 2 → TO 3)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {SUBJECT_LIST.map((subject) => {
+                    const score1 = student.scores?.TO1?.[subject] ?? '-';
+                    const score2 = student.scores?.TO2?.[subject] ?? '-';
+                    const score3 = student.scores?.TO3?.[subject] ?? '-';
+
+                    let diffText = '-';
+                    if (score2 !== '-' && score3 !== '-') {
+                      const diff = Number(score3) - Number(score2);
+                      diffText = diff > 0 ? `+${diff}` : `${diff}`;
+                    }
+
+                    return (
+                      <tr key={subject} className="hover:bg-slate-50/60">
+                        <td className="p-3 font-semibold text-slate-800">{subject}</td>
+                        <td className="p-3 text-center text-slate-600">{score1}</td>
+                        <td className="p-3 text-center text-slate-600">{score2}</td>
+                        <td className="p-3 text-center font-bold text-emerald-700">{score3}</td>
+                        <td className={`p-3 text-center font-bold ${
+                          diffText.startsWith('+') ? 'text-emerald-600' : diffText.startsWith('-') && diffText !== '-' ? 'text-rose-600' : 'text-slate-400'
+                        }`}>
+                          {diffText}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // VIEW: CARI SISWA (ORANG TUA / PUBLIC)
+    // ==========================================
+    function LookupView({ students, openReport }) {
+      const [inputVal, setInputVal] = useState('');
+      const [errorMsg, setErrorMsg] = useState('');
+
+      const handleSearch = (e) => {
+        e.preventDefault();
+        setErrorMsg('');
+        const found = students.find(s => 
+          s.nomor_peserta.trim() === inputVal.trim() || 
+          (s.nisn && s.nisn.trim() === inputVal.trim())
+        );
+
+        if (found) {
+          openReport(found.id);
+        } else {
+          setErrorMsg('Data siswa dengan Nomor Peserta / NISN tersebut tidak ditemukan.');
+        }
+      };
+
+      return (
+        <div className="max-w-md mx-auto px-4 py-16">
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200/80 text-center space-y-6">
+            <div className="w-12 h-12 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
+              <i data-lucide="search" className="w-6 h-6"></i>
+            </div>
+
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Pencarian Laporan Siswa</h2>
+              <p className="text-xs text-slate-500 mt-1">Masukkan Nomor Peserta atau NISN siswa untuk mengakses laporan individual.</p>
+            </div>
+
+            <form onSubmit={handleSearch} className="space-y-4 text-left">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Nomor Peserta / NISN</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: 910303"
+                  value={inputVal}
+                  onChange={(e) => setInputVal(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+
+              {errorMsg && <p className="text-xs text-rose-600 font-medium">{errorMsg}</p>}
+
+              <button
+                type="submit"
+                className="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
+              >
+                Cari Laporan
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // VIEW: LOGIN ADMIN
+    // ==========================================
+    function LoginView({ onLogin }) {
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        // Simple authentication check
+        if (email && password) {
+          onLogin();
+        }
+      };
+
+      return (
+        <div className="max-w-md mx-auto px-4 py-16">
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200/80 space-y-6">
+            <div className="text-center">
+              <h2 className="text-xl font-bold text-slate-900">Login Administrator</h2>
+              <p className="text-xs text-slate-500 mt-1">Masuk untuk Mengelola Data Nilai & Import Excel</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Email Admin</label>
+                <input
+                  type="email"
+                  placeholder="admin@sekolah.sch.id"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
+              >
+                Masuk Dashboard Admin
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // VIEW: ADMIN DASHBOARD
+    // ==========================================
+    function AdminView({ students, setStudents, onLogout }) {
+      const [activeTab, setActiveTab] = useState('list'); // 'list', 'add', 'import'
+      const [editingStudent, setEditingStudent] = useState(null);
+
+      // Form State Add/Edit
+      const [formData, setFormData] = useState({
+        nama: '',
+        nomor_peserta: '',
+        nisn: '',
+        kelas: 'X A',
+        asal_sekolah: 'SMA Negeri 1',
+        placement: 0,
+      });
+
+      const handleSaveStudent = (e) => {
+        e.preventDefault();
+        if (editingStudent) {
+          setStudents(students.map(s => s.id === editingStudent.id ? { ...s, ...formData } : s));
+          setEditingStudent(null);
+        } else {
+          const newStudent = {
+            id: Date.now().toString(),
+            ...formData,
+            peringkat: students.length + 1,
+            kelompok_capaian: 'Belum mengikuti TO 3',
+            scores: { TO1: null, TO2: null, TO3: null }
+          };
+          setStudents([...students, newStudent]);
+        }
+        setFormData({ nama: '', nomor_peserta: '', nisn: '', kelas: 'X A', asal_sekolah: 'SMA Negeri 1', placement: 0 });
+        setActiveTab('list');
+      };
+
+      const handleDelete = (id) => {
+        if (confirm('Apakah Anda yakin ingin menghapus data siswa ini?')) {
+          setStudents(students.filter(s => s.id !== id));
+        }
+      };
+
+      // Import Excel Handler
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const bstr = evt.target.result;
+          const wb = XLSX.read(bstr, { type: 'binary' });
+          const wsName = wb.SheetNames[0];
+          const ws = wb.Sheets[wsName];
+          const data = XLSX.utils.sheet_to_json(ws);
+
+          let updatedList = [...students];
+          data.forEach(row => {
+            const index = updatedList.findIndex(s => String(s.nomor_peserta) === String(row['No Peserta']));
+            if (index > -1) {
+              updatedList[index] = {
+                ...updatedList[index],
+                nama: row['Nama'] || updatedList[index].nama,
+                kelas: row['Kelas'] || updatedList[index].kelas,
+                placement: row['Placement'] || updatedList[index].placement
+              };
+            } else {
+              updatedList.push({
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+                nama: row['Nama'],
+                nomor_peserta: String(row['No Peserta']),
+                nisn: String(row['NISN'] || ''),
+                kelas: row['Kelas'] || 'X A',
+                asal_sekolah: 'SMA Negeri 1',
+                placement: row['Placement'] || 0,
+                scores: { TO1: null, TO2: null, TO3: null }
+              });
+            }
+          });
+
+          setStudents(updatedList);
+          alert('Data Excel berhasil diperbarui!');
+          setActiveTab('list');
+        };
+        reader.readAsBinaryString(file);
+      };
+
+      return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+          <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Dashboard Administrator</h2>
+              <p className="text-xs text-slate-500">Kelola Data Siswa, Edit Nilai & Import File Excel</p>
+            </div>
+            <button
+              onClick={onLogout}
+              className="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-xl text-xs font-bold transition"
+            >
+              Keluar Admin
+            </button>
+          </div>
+
+          {/* TABS */}
+          <div className="flex gap-2 border-b border-slate-200 pb-2 text-xs font-bold">
+            <button
+              onClick={() => setActiveTab('list')}
+              className={`px-4 py-2 rounded-xl transition ${activeTab === 'list' ? 'bg-emerald-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+            >
+              Daftar Siswa ({students.length})
+            </button>
+            <button
+              onClick={() => {
+                setEditingStudent(null);
+                setFormData({ nama: '', nomor_peserta: '', nisn: '', kelas: 'X A', asal_sekolah: 'SMA Negeri 1', placement: 0 });
+                setActiveTab('add');
+              }}
+              className={`px-4 py-2 rounded-xl transition ${activeTab === 'add' ? 'bg-emerald-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+            >
+              + Tambah Siswa Baru
+            </button>
+            <button
+              onClick={() => setActiveTab('import')}
+              className={`px-4 py-2 rounded-xl transition ${activeTab === 'import' ? 'bg-emerald-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+            >
+              Import Data Excel
+            </button>
+          </div>
+
+          {/* TAB CONTENT: DAFTAR SISWA */}
+          {activeTab === 'list' && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-100">
+                  <tr>
+                    <th className="p-3.5">Nama Siswa</th>
+                    <th className="p-3.5">No Peserta</th>
+                    <th className="p-3.5">Kelas</th>
+                    <th className="p-3.5">Placement</th>
+                    <th className="p-3.5 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {students.map(s => (
+                    <tr key={s.id} className="hover:bg-slate-50/60">
+                      <td className="p-3.5 font-bold text-slate-900">{s.nama}</td>
+                      <td className="p-3.5 font-mono">{s.nomor_peserta}</td>
+                      <td className="p-3.5">{s.kelas}</td>
+                      <td className="p-3.5">{s.placement || '-'}</td>
+                      <td className="p-3.5 text-center space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingStudent(s);
+                            setFormData({
+                              nama: s.nama,
+                              nomor_peserta: s.nomor_peserta,
+                              nisn: s.nisn || '',
+                              kelas: s.kelas,
+                              asal_sekolah: s.asal_sekolah || '',
+                              placement: s.placement || 0
+                            });
+                            setActiveTab('add');
+                          }}
+                          className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-bold"
+                        >
+                          Edit Data
+                        </button>
+                        <button
+                          onClick={() => handleDelete(s.id)}
+                          className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 rounded-lg font-bold"
+                        >
+                          Hapus
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* TAB CONTENT: ADD/EDIT FORM */}
+          {activeTab === 'add' && (
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 max-w-xl mx-auto space-y-4">
+              <h3 className="text-base font-bold text-slate-900">{editingStudent ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}</h3>
+              <form onSubmit={handleSaveStudent} className="space-y-3 text-xs">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nama Lengkap</label>
+                  <input
+                    type="text"
+                    value={formData.nama}
+                    onChange={(e) => setFormData({...formData, nama: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Nomor Peserta</label>
+                    <input
+                      type="text"
+                      value={formData.nomor_peserta}
+                      onChange={(e) => setFormData({...formData, nomor_peserta: e.target.value})}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">NISN</label>
+                    <input
+                      type="text"
+                      value={formData.nisn}
+                      onChange={(e) => setFormData({...formData, nisn: e.target.value})}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Kelas</label>
+                    <input
+                      type="text"
+                      value={formData.kelas}
+                      onChange={(e) => setFormData({...formData, kelas: e.target.value})}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Placement</label>
+                    <input
+                      type="number"
+                      value={formData.placement}
+                      onChange={(e) => setFormData({...formData, placement: Number(e.target.value)})}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                    />
+                  </div>
+                </div>
+                <div className="pt-2 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('list')}
+                    className="bg-slate-100 text-slate-700 px-4 py-2 rounded-xl font-bold"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-emerald-800 text-white px-4 py-2 rounded-xl font-bold"
+                  >
+                    Simpan Data
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* TAB CONTENT: IMPORT EXCEL */}
+          {activeTab === 'import' && (
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200/80 max-w-lg mx-auto text-center space-y-4">
+              <i data-lucide="upload" className="w-8 h-8 text-slate-400 mx-auto"></i>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Upload Berkas Excel (.xlsx)</h3>
+                <p className="text-xs text-slate-500 mt-1">Format Kolom: Nama | No Peserta | Kelas | Placement</p>
+              </div>
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                onChange={handleFileUpload}
+                className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100"
+              />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Helper Card Component
+    function StatCard({ title, value, icon, color }) {
+      return (
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">{title}</span>
+            <i data-lucide={icon} className={`w-4 h-4 ${color}`}></i>
+          </div>
+          <div className="text-2xl font-black text-slate-900 mt-2">{value}</div>
+        </div>
+      );
+    }
+
+    // Helper Badge Component
+    function CapaianBadge({ text }) {
+      let color = 'bg-slate-100 text-slate-600 border-slate-200';
+      if (text === 'Sangat Baik') color = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      if (text === 'Baik') color = 'bg-teal-100 text-teal-800 border-teal-200';
+      if (text === 'Cukup') color = 'bg-amber-100 text-amber-800 border-amber-200';
+      if (text === 'Perlu Peningkatan') color = 'bg-rose-100 text-rose-800 border-rose-200';
+
+      return (
+        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${color}`}>
+          {text}
+        </span>
+      );
+    }
+
+    // Render React App
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
