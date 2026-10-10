@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Laporan Multi-Tryout</title>
-
-    <!-- Tailwind CSS -->
+    <title>Sistem Laporan Evaluasi Multi-Tryout - MAU MBI Amanatul Ummah</title>
+    
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -15,8 +15,7 @@
                         brand: {
                             50: '#f0f9ff',
                             100: '#e0f2fe',
-                            500: '#0284c7',
-                            600: '#0369a1',
+                            600: '#0284c7',
                             700: '#0369a1',
                             800: '#075985',
                             900: '#0c4a6e',
@@ -26,177 +25,253 @@
             }
         }
     </script>
-
-    <!-- Chart.js for data visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- SheetJS for parsing Excel files -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-    <!-- Lucide Icons -->
+    <!-- Chart.js, Lucide Icons, & SheetJS (Excel Parser) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- Google Fonts -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        /* Cetak / Print Media Style F4 Portrait */
         @media print {
+            @page {
+                size: 210mm 330mm portrait; /* F4 Size */
+                margin: 12mm 15mm;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+            }
             .no-print {
                 display: none !important;
             }
             .print-only {
                 display: block !important;
             }
-            body {
-                background: white;
+            #student-modal {
+                position: static !important;
+                background: transparent !important;
+                padding: 0 !important;
+                display: block !important;
             }
             .modal-container {
-                position: static !important;
-                max-width: 100% !important;
                 box-shadow: none !important;
-                padding: 0 !important;
+                border: none !important;
+                max-width: 100% !important;
+                max-height: none !important;
                 overflow: visible !important;
             }
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
         }
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
 
-    <!-- Header -->
+    <!-- Header Aplikasi -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
-                    <div class="p-2.5 bg-brand-50 text-brand-600 rounded-xl border border-brand-100 shadow-sm">
-                        <i data-lucide="line-chart" class="w-7 h-7"></i>
+                    <div class="w-10 h-10 rounded-xl bg-brand-700 flex items-center justify-center text-white font-bold shadow-sm shrink-0">
+                        <i data-lucide="graduation-cap" class="w-6 h-6"></i>
                     </div>
                     <div>
-                        <h1 class="text-xl font-extrabold text-slate-900 leading-tight">LAPORAN TRYOUT</h1>
-                        <p class="text-xs text-slate-500 font-medium">MAU MBI Amanatul Ummah Surabaya• Akumulasi & Evaluasi Perkembangan Siswa</p>
+                        <h1 class="text-lg font-extrabold text-slate-900 leading-tight uppercase">
+                            LAPORAN EVALUASI MULTI-TRYOUT MAU MBI
+                        </h1>
+                        <p class="text-xs text-slate-500 font-medium">MAU MBI Amanatul Ummah Surabaya • Rekapitulasi TO Terintegrasi</p>
                     </div>
                 </div>
 
-                <!-- Action Controls -->
-                <div class="flex items-center flex-wrap gap-2.5">
-                    <button onclick="openManageTryoutsModal()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition">
-                        <i data-lucide="layers" class="w-4 h-4"></i>
-                        <span>Kelola Tryout (<span id="tryout-count-badge">1</span>)</span>
+                <!-- TOMBOL ACTION POJOK KANAN ATAS -->
+                <div class="flex items-center gap-2 flex-wrap justify-end">
+                    <span id="header-database-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200 mr-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Master Database (<span id="badge-count">6</span> Siswa)
+                    </span>
+
+                    <!-- Input file tersembunyi untuk Excel multiple -->
+                    <input type="file" id="excel-file-input" accept=".xlsx, .xls" multiple class="hidden" onchange="handleExcelUpload(event)">
+
+                    <!-- Tombol Upload Tryout -->
+                    <button onclick="document.getElementById('excel-file-input').click()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition">
+                        <i data-lucide="file-up" class="w-4 h-4"></i>
+                        <span>Upload Tryout</span>
                     </button>
 
-                    <button onclick="openUploadModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm transition">
-                        <i data-lucide="file-plus" class="w-4 h-4"></i>
-                        <span>+ Tambah Excel Tryout</span>
+                    <!-- Tombol Kelola Tryout -->
+                    <button onclick="openManageTOModal()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 flex items-center gap-1.5 transition">
+                        <i data-lucide="sliders" class="w-4 h-4 text-slate-500"></i>
+                        <span>Kelola Tryout</span>
                     </button>
 
-                    <button onclick="resetDataToDefault()" title="Reset ke Data Awal Built-in" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" hover-tooltip="Reset Data">
-                        <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                    <!-- Tombol Refresh -->
+                    <button onclick="refreshData()" title="Refresh Data" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-200 transition">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                     </button>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6 no-print">
+        
+        <!-- BAGIAN ANALISIS KESELURUHAN MULTI-TRYOUT -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-sm font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4 text-brand-600"></i>
+                    Analisis Ujian Keseluruhan Multi-Tryout (<span id="to-range-label">TO 1 - TO 5</span>)
+                </h2>
+                <span class="text-xs text-slate-500 font-medium">Total Master Populer: <b id="total-master-count">6 Siswa</b></span>
+            </div>
 
-        <!-- Batch Trend Chart & Quick Overview -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
-            <!-- Overall Class Batch Trend Chart -->
-            <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center justify-between mb-3">
-                    <div>
-                        <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                            <i data-lucide="trending-up" class="w-4 h-4 text-brand-600"></i>
-                            Tren Rata-Rata Angkatan (Multi-Tryout)
-                        </h2>
-                        <p class="text-xs text-slate-500">Progres pertumbuhan rata-rata total nilai seluruh siswa</p>
+            <!-- KOTAK BOX ANGKA BOLD MENONJOL -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <!-- BOX 1: KELOMPOK TINGGI -->
+                <div class="bg-white p-5 rounded-xl border border-amber-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-amber-800 uppercase tracking-wide">Kelompok Tinggi</span>
+                        <span class="p-1.5 bg-amber-50 text-amber-600 rounded-lg"><i data-lucide="award" class="w-5 h-5"></i></span>
                     </div>
-                    <span id="batch-growth-badge" class="px-2.5 py-1 text-xs font-bold rounded-md bg-emerald-100 text-emerald-800">
-                        +0.0
-                    </span>
+                    <div class="mt-3">
+                        <div class="flex items-baseline gap-2">
+                            <span id="box-tinggi-count" class="text-3xl font-black text-amber-700">0</span>
+                            <span class="text-sm font-bold text-slate-600">Siswa</span>
+                            <span id="box-tinggi-pct" class="text-sm font-extrabold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 ml-auto">0.0%</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-2">Rerata akumulasi nilai <b>&ge; 6.00</b> (Top Performer Angkatan)</p>
+                    </div>
                 </div>
-                <div class="relative h-48 w-full">
-                    <canvas id="batchTrendChart"></canvas>
+
+                <!-- BOX 2: KELOMPOK MENENGAH -->
+                <div class="bg-white p-5 rounded-xl border border-blue-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-blue-800 uppercase tracking-wide">Kelompok Menengah</span>
+                        <span class="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="trending-up" class="w-5 h-5"></i></span>
+                    </div>
+                    <div class="mt-3">
+                        <div class="flex items-baseline gap-2">
+                            <span id="box-menengah-count" class="text-3xl font-black text-blue-700">0</span>
+                            <span class="text-sm font-bold text-slate-600">Siswa</span>
+                            <span id="box-menengah-pct" class="text-sm font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 ml-auto">0.0%</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-2">Rerata akumulasi nilai <b>5.00 - 5.99</b> (Sekitar Rerata Angkatan)</p>
+                    </div>
+                </div>
+
+                <!-- BOX 3: KELOMPOK PERLU PENGUATAN -->
+                <div class="bg-white p-5 rounded-xl border border-rose-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-rose-800 uppercase tracking-wide">Kelompok Perlu Penguatan</span>
+                        <span class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><i data-lucide="alert-circle" class="w-5 h-5"></i></span>
+                    </div>
+                    <div class="mt-3">
+                        <div class="flex items-baseline gap-2">
+                            <span id="box-penguatan-count" class="text-3xl font-black text-rose-700">0</span>
+                            <span class="text-sm font-bold text-slate-600">Siswa</span>
+                            <span id="box-penguatan-pct" class="text-sm font-extrabold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 ml-auto">0.0%</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-2">Rerata akumulasi nilai <b>&lt; 5.00</b> (Membutuhkan Pendampingan Khusus)</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Stats Overview Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                    <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                        <i data-lucide="users" class="w-5 h-5"></i>
+            <!-- GRAFIK KESELURUHAN & RINCIAN KEIKUTSERTAAN -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- CHART GRAFIK FLUKTUASI -->
+                <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">Grafik Fluktuasi Distribusi Kategori Siswa Per Tryout</h3>
+                            <p class="text-[11px] text-slate-500">Perubahan populasi Kelompok Tinggi, Menengah, dan Penguatan dari seluruh Tryout</p>
+                        </div>
+                        <span class="px-2.5 py-1 text-[11px] font-bold bg-brand-50 text-brand-700 rounded border border-brand-100">Multi-TO Trend</span>
                     </div>
-                    <div>
-                        <p class="text-xs font-medium text-slate-500">Total Siswa Terdaftar</p>
-                        <h3 id="stat-total-students" class="text-xl font-bold text-slate-900">0</h3>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                    <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-                        <i data-lucide="award" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs font-medium text-slate-500">Rata-Rata TO Terbaru</p>
-                        <h3 id="stat-latest-avg" class="text-xl font-bold text-slate-900">0</h3>
+                    <div class="relative h-56 w-full">
+                        <canvas id="overallCategoryFluctuationChart"></canvas>
                     </div>
                 </div>
 
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                    <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-                        <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
-                    </div>
+                <!-- BOX TABEL KEIKUTSERTAAN HADIR VS ABSEN -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
                     <div>
-                        <p class="text-xs font-medium text-slate-500">Siswa Tren Meningkat</p>
-                        <h3 id="stat-improving-count" class="text-xl font-bold text-slate-900">0</h3>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-2">Rincian Keikutsertaan Peserta Ujian</h3>
+                        <div id="attendance-summary-list" class="divide-y divide-slate-100 text-xs pt-1 max-h-48 overflow-y-auto custom-scrollbar">
+                        </div>
+                    </div>
+                    <div id="attendance-note" class="p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 text-[11px] text-slate-600 leading-tight">
+                        💡 <i>Tingkat keikutsertaan dihitung berdasarkan master database siswa terdaftar.</i>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Filter and Search Controls -->
-        <section class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm no-print">
-            <div class="flex flex-col lg:flex-row gap-4 justify-between items-center">
-                <div class="relative w-full lg:w-96">
-                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" id="search-input" oninput="applyFilters()" placeholder="Cari Nama / No Peserta..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+        <!-- MENU SCROLLING BAWAH: FILTER BERDASARKAN KELAS, TREN, KELOMPOK, PERFORMANCE -->
+        <section class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                    <i data-lucide="filter" class="w-4 h-4 text-brand-600"></i>
+                    Pencarian &amp; Filter Data Siswa
+                </h3>
+                <span id="showing-count" class="text-xs font-bold text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded border border-brand-100">
+                    Menampilkan 0 Siswa
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <!-- 1. CARI NAMA / NOPESERTA -->
+                <div>
+                    <label class="text-[11px] font-bold text-slate-600 block mb-1">Cari Nama / No Peserta</label>
+                    <div class="relative">
+                        <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="search-input" oninput="applyFilters()" placeholder="Cari..." class="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
                 </div>
 
-                <div class="flex flex-wrap lg:flex-nowrap gap-3 w-full lg:w-auto">
-                    <select id="filter-trend" onchange="applyFilters()" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        <option value="ALL">Semua Tren Progres</option>
-                        <option value="UP">↗ Tren Meningkat</option>
-                        <option value="STABLE">→ Tren Stabil (±2 pt)</option>
-                        <option value="DOWN">↘ Tren Menurun</option>
+                <!-- 2. FILTER KELAS -->
+                <div>
+                    <label class="text-[11px] font-bold text-slate-600 block mb-1">Filter Kelas</label>
+                    <select id="filter-kelas" onchange="applyFilters()" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="ALL">Semua Kelas</option>
                     </select>
+                </div>
 
-                    <select id="filter-tier" onchange="applyFilters()" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        <option value="ALL">Semua Kategori Performance</option>
-                        <option value="Sangat Memuaskan">Sangat Memuaskan (Rata2 >= 70)</option>
-                        <option value="Memuaskan">Memuaskan (55 - 69.9)</option>
-                        <option value="Baik">Baik (45 - 54.9)</option>
-                        <option value="Perlu Bimbingan">Perlu Bimbingan (< 45)</option>
+                <!-- 3. FILTER TREN -->
+                <div>
+                    <label class="text-[11px] font-bold text-slate-600 block mb-1">Filter Tren Progres</label>
+                    <select id="filter-trend" onchange="applyFilters()" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="ALL">Semua Tren</option>
+                        <option value="UP">↗ Tren Meningkat (+)</option>
+                        <option value="STABLE">→ Tren Stabil (±0.2)</option>
+                        <option value="DOWN">↘ Tren Menurun (-)</option>
                     </select>
+                </div>
 
-                    <select id="sort-order" onchange="applyFilters()" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        <option value="rank-asc">Peringkat TO Terbaru (1 - Atas)</option>
+                <!-- 4. FILTER KELOMPOK -->
+                <div>
+                    <label class="text-[11px] font-bold text-slate-600 block mb-1">Filter Kelompok</label>
+                    <select id="filter-category" onchange="applyFilters()" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="ALL">Semua Kelompok</option>
+                        <option value="Kelompok Tinggi">Kelompok Tinggi (&ge;6.0)</option>
+                        <option value="Kelompok Menengah">Kelompok Menengah (5.0-5.9)</option>
+                        <option value="Kelompok Perlu Penguatan">Kelompok Perlu Penguatan (&lt;5.0)</option>
+                    </select>
+                </div>
+
+                <!-- 5. FILTER PERFORMANCE (SORTING) -->
+                <div>
+                    <label class="text-[11px] font-bold text-slate-600 block mb-1">Urutkan Performance</label>
+                    <select id="sort-performance" onchange="applyFilters()" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="avg-desc">Nilai Rerata Tertinggi</option>
+                        <option value="avg-asc">Nilai Rerata Terendah</option>
                         <option value="delta-desc">Peningkatan Terbesar (Delta +)</option>
                         <option value="name-asc">Nama Siswa (A - Z)</option>
                     </select>
@@ -204,991 +279,1102 @@
             </div>
         </section>
 
-        <!-- Student Grid -->
-        <section class="no-print">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500">Daftar Perkembangan Siswa</h2>
-                <span id="showing-count" class="text-xs font-medium text-slate-500">Menampilkan 0 siswa</span>
-            </div>
-
-            <div id="student-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Cards injected via JS -->
-            </div>
-
-            <div id="empty-state" class="hidden text-center py-12 bg-white rounded-xl border border-slate-200">
-                <i data-lucide="search-x" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
-                <p class="text-slate-600 font-medium">Data siswa tidak ditemukan</p>
-                <p class="text-xs text-slate-400 mt-1">Coba sesuaikan kata kunci pencarian atau filter pilihan Anda</p>
+        <!-- STUDENT CARDS LIST -->
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="max-h-[580px] overflow-y-auto custom-scrollbar divide-y divide-slate-100" id="student-list-container">
             </div>
         </section>
     </main>
 
-    <!-- Modal: Upload Excel Tryout Baru -->
-    <div id="upload-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100">
-            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <i data-lucide="upload-cloud" class="w-5 h-5 text-brand-600"></i>
-                    Upload File Excel Tryout Baru
-                </h3>
-                <button onclick="closeUploadModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-
-            <form onsubmit="handleFileUpload(event)" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nama / Seri Tryout</label>
-                    <input type="text" id="upload-to-name" required placeholder="Contoh: Tryout 2 - September 2026" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih File Excel (.xlsx / .xls)</label>
-                    <input type="file" id="upload-to-file" accept=".xlsx, .xls" required class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
-                    <p class="text-[11px] text-slate-400 mt-1.5">Sistem akan otomatis mencocokkan siswa berdasarkan <b>Nomor Peserta</b> atau <b>Nama Siswa</b>.</p>
-                </div>
-
-                <div class="pt-2 flex items-center justify-end gap-2">
-                    <button type="button" onclick="closeUploadModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Batal</button>
-                    <button type="submit" class="px-4 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-lg shadow-sm">Proses & Akumulasikan</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal: Kelola Daftar Tryout -->
-    <div id="manage-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100">
-            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <i data-lucide="layers" class="w-5 h-5 text-brand-600"></i>
-                    Daftar Seri Tryout Terdaftar
-                </h3>
-                <button onclick="closeManageModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-
-            <div id="tryout-list-container" class="space-y-2.5 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-                <!-- Injected via JS -->
-            </div>
-
-            <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end">
-                <button onclick="closeManageModal()" class="px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg">Tutup</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Detail Laporan Akumulasi & Progress Siswa -->
+    <!-- MODAL LAPORAN INDIVIDUAL SISWA -->
     <div id="student-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex justify-center items-center p-2 sm:p-4 overflow-y-auto">
-        <div class="modal-container bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col my-auto border border-slate-100 overflow-hidden relative">
+        <div class="modal-container bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] flex flex-col my-auto border border-slate-100 overflow-hidden relative">
             
-            <!-- Modal Header -->
-            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-start justify-between relative no-print">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div class="w-12 h-12 bg-brand-600 text-white rounded-xl font-bold flex items-center justify-center text-lg shadow-md" id="modal-avatar">
-                        AA
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h2 class="text-xl font-bold text-slate-900" id="modal-name">Nama Siswa</h2>
-                            <span id="modal-trend-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                ↗ Meningkat
-                            </span>
-                        </div>
-                        <p class="text-xs text-slate-500 mt-0.5" id="modal-subtext">No. Peserta: -</p>
-                    </div>
-                </div>
-
+            <!-- MENU CETAK & CLOSE -->
+            <div class="px-6 py-3.5 bg-slate-900 text-white flex items-center justify-between no-print sticky top-0 z-20">
                 <div class="flex items-center gap-2">
-                    <button onclick="printStudentReport()" class="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5 transition">
+                    <i data-lucide="file-badge" class="w-5 h-5 text-brand-500"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">Laporan Perkembangan Siswa (Format Cetak F4)</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="printStudentReport()" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-lg shadow flex items-center gap-2 transition">
                         <i data-lucide="printer" class="w-4 h-4"></i>
-                        <span>Cetak Laporan</span>
+                        <span>Cetak Laporan F4</span>
                     </button>
-                    <button onclick="closeModal()" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-lg transition">
+                    <button onclick="closeModal()" class="p-1 text-slate-400 hover:text-white rounded-lg transition">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Tab Navigation Header -->
-            <div class="px-6 border-b border-slate-200 bg-white flex gap-6 no-print">
-                <button onclick="switchTab('accumulation')" id="tab-btn-accumulation" class="py-3 text-xs font-bold border-b-2 border-brand-600 text-brand-600 flex items-center gap-1.5">
-                    <i data-lucide="line-chart" class="w-4 h-4"></i>
-                    Rapor Akumulasi & Progres Multi-TO
-                </button>
-                <button onclick="switchTab('single')" id="tab-btn-single" class="py-3 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
-                    <i data-lucide="file-text" class="w-4 h-4"></i>
-                    Detail Hasil Per Tryout
-                </button>
-            </div>
-
-            <!-- Modal Content Body -->
-            <div class="p-6 overflow-y-auto custom-scrollbar flex-grow space-y-6" id="modal-printable-content">
+            <!-- ISI LAPORAN INDIVIDUAL -->
+            <div class="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-grow space-y-6 bg-white" id="modal-printable-content">
                 
-                <!-- Printable Header (Visible only when printing) -->
-                <div class="hidden print-only mb-6 pb-4 border-b border-slate-300">
-                    <div class="text-center">
-                        <h1 class="text-xl font-bold text-slate-900">LAPORAN EVALUASI & AKUMULASI PERKEMBANGAN BELAJAR</h1>
-                        <p class="text-xs text-slate-600 uppercase">LPP AMANATUL UMMAH • SAINTEK 2026</p>
+                <!-- HEADER LAPORAN COP SEKOLAH -->
+                <div class="border-b-2 border-slate-800 pb-4 flex items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-lg font-black text-slate-900 tracking-tight uppercase">MAU MBI AMANATUL UMMAH SURABAYA</h1>
+                        <p class="text-xs text-slate-600 font-semibold">Laporan Perkembangan Evaluasi Tryout Asesmen Akademik • Tahun Ajaran 2026/2027</p>
                     </div>
-                    <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
-                        <p><strong>Nama Peserta:</strong> <span id="print-name">-</span></p>
-                        <p><strong>No. Peserta:</strong> <span id="print-id">-</span></p>
-                        <p><strong>Status Progres:</strong> <span id="print-trend">-</span></p>
-                        <p><strong>Total Tryout Diikuti:</strong> <span id="print-to-count">-</span></p>
+                    <div class="text-right">
+                        <span class="text-[11px] font-bold text-slate-500 block uppercase">Dokumen Resmi</span>
+                        <span class="text-xs font-extrabold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">Asesmen Multi-TO</span>
                     </div>
                 </div>
 
-                <!-- TAB 1: Rapor Akumulasi & Progres Multi-TO -->
-                <div id="tab-accumulation-content" class="space-y-6">
-                    <!-- Key Statistics Cards -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <div>
-                            <span class="text-[11px] text-slate-500 block">Rata-Rata Akumulasi</span>
-                            <span class="text-lg font-bold text-brand-700" id="acc-overall-avg">0</span>
+                <!-- BAGIAN NAMA SISWA -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <div>
+                        <span class="text-slate-400 block text-[11px] font-semibold">Nama Siswa</span>
+                        <span class="font-extrabold text-slate-900 text-sm" id="rep-nama">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[11px] font-semibold">Kelas</span>
+                        <span class="font-bold text-slate-800" id="rep-kelas">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[11px] font-semibold">Nomor Peserta</span>
+                        <span class="font-bold text-slate-800" id="rep-nopeserta">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[11px] font-semibold">Keikutsertaan Tryout</span>
+                        <span class="font-bold text-brand-700" id="rep-partisipasi">-</span>
+                    </div>
+                </div>
+
+                <!-- BOX INDEKS NO 1 - RINGKASAN PERKEMBANGAN -->
+                <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-brand-700 text-white font-black text-xs flex items-center justify-center">1</span>
+                            <h3 class="text-xs font-bold uppercase tracking-wide text-slate-900">Ringkasan Perkembangan Siswa &amp; Posisi Angkatan</h3>
                         </div>
-                        <div>
-                            <span class="text-[11px] text-slate-500 block">Nilai Tertinggi (TO)</span>
-                            <span class="text-lg font-bold text-slate-900" id="acc-highest-score">0</span>
+                        <span id="rep-box1-category" class="px-3 py-0.5 rounded-full text-xs font-black border">
+                            -
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1">
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <span class="text-slate-500 block text-[11px]">Rata-Rata Nilai Siswa (Semua TO)</span>
+                            <span class="text-lg font-black text-brand-700" id="rep-avg-siswa">0.00</span>
                         </div>
-                        <div>
-                            <span class="text-[11px] text-slate-500 block">Peringkat Terkini</span>
-                            <span class="text-base font-bold text-slate-800" id="acc-latest-rank">-</span>
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <span class="text-slate-500 block text-[11px]">Rata-Rata Nilai Angkatan</span>
+                            <span class="text-lg font-black text-slate-800" id="rep-avg-angkatan">0.00</span>
                         </div>
-                        <div>
-                            <span class="text-[11px] text-slate-500 block">Perubahan (Delta Terbaru)</span>
-                            <span class="text-base font-bold" id="acc-delta-score">-</span>
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <span class="text-slate-500 block text-[11px]">Posisi Relatif Angkatan</span>
+                            <span class="text-xs font-extrabold text-slate-800" id="rep-posisi-relatif">-</span>
                         </div>
                     </div>
 
-                    <!-- Individual Trend Chart -->
-                    <div class="bg-white p-4 rounded-xl border border-slate-200">
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Grafik Tren Progres Rata-Rata (TO ke TO)</h3>
-                        <div class="relative h-52 w-full">
-                            <canvas id="studentTrendChart"></canvas>
+                    <div class="text-xs text-slate-600 bg-slate-50/80 p-3 rounded-lg border border-slate-100 leading-relaxed" id="rep-box1-explanation">
+                    </div>
+                </div>
+
+                <!-- BOX INDEKS NO 2 - GRAFIK PERKEMBANGAN -->
+                <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-3 shadow-sm">
+                    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                        <span class="w-6 h-6 rounded-full bg-brand-700 text-white font-black text-xs flex items-center justify-center">2</span>
+                        <h3 class="text-xs font-bold uppercase tracking-wide text-slate-900">Grafik Perkembangan Nilai Dari Semua Tryout</h3>
+                    </div>
+                    <div class="relative h-56 w-full pt-1">
+                        <canvas id="studentIndividualChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- BOX INDEKS NO 3 - PROFIL CAPAIAN MAPEL DI SETIAP TRYOUT & POSISI RELATIF PER MAPEL -->
+                <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-brand-700 text-white font-black text-xs flex items-center justify-center">3</span>
+                            <h3 class="text-xs font-bold uppercase tracking-wide text-slate-900">Rincian Capaian Nilai Mapel Di Setiap Tryout</h3>
                         </div>
+                        <span class="text-[11px] font-semibold text-slate-500">Skala Nilai 0.00 - 10.00</span>
                     </div>
 
-                    <!-- Longitudinal Subject Performance Matrix -->
-                    <div class="p-4 bg-white rounded-xl border border-slate-200">
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Matriks Perubahan Nilai Subtes</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600">
-                                        <th class="p-2 font-semibold">Subtes</th>
-                                        <th class="p-2 font-semibold text-center">TO Awal</th>
-                                        <th class="p-2 font-semibold text-center">TO Terbaru</th>
-                                        <th class="p-2 font-semibold text-center">Rata-Rata Akumulasi</th>
-                                        <th class="p-2 font-semibold text-center">Pertumbuhan ($\Delta$)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="matrix-table-body" class="divide-y divide-slate-100">
-                                    <!-- Injected via JS -->
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-xs border-collapse border border-slate-200">
+                            <thead>
+                                <tr id="rep-box3-thead" class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
+                                </tr>
+                            </thead>
+                            <tbody id="rep-box3-table" class="divide-y divide-slate-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- BOX INDEKS NO 4 - BACAAN ORANG TUA -->
+                <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-3 shadow-sm">
+                    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                        <span class="w-6 h-6 rounded-full bg-brand-700 text-white font-black text-xs flex items-center justify-center">4</span>
+                        <h3 class="text-xs font-bold uppercase tracking-wide text-slate-900">Bacaan Orang Tua (Laporan Evaluasi Komprehensif)</h3>
                     </div>
 
-                    <!-- Automated Longitudinal Insights -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="p-4 bg-emerald-50/70 rounded-xl border border-emerald-100">
-                            <div class="flex items-center gap-2 mb-2 text-emerald-800 font-semibold text-sm">
-                                <i data-lucide="trending-up" class="w-4 h-4"></i>
-                                <h4>Area Pertumbuhan Tertinggi</h4>
+                    <div class="space-y-3 text-xs">
+                        <div class="p-3 bg-blue-50/60 rounded-lg border border-blue-100">
+                            <span class="font-bold text-slate-800 block mb-0.5">📌 Status Rerata Nilai Terbaru:</span>
+                            <p class="text-slate-700" id="rep-box4-latest-status">-</p>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <span class="font-bold text-slate-800 block mb-1">📊 Perbandingan Ujian Bagus vs Perlu Peningkatan:</span>
+                            <p class="text-slate-700" id="rep-box4-percentage">-</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="p-3 bg-emerald-50/70 rounded-lg border border-emerald-100">
+                                <span class="font-bold text-emerald-900 block mb-1">🌟 Area Menonjol:</span>
+                                <p class="text-slate-700" id="rep-box4-prominent">-</p>
                             </div>
-                            <ul id="acc-strengths" class="text-xs text-slate-700 space-y-1.5 list-disc list-inside">
-                                <!-- Injected -->
-                            </ul>
-                        </div>
-
-                        <div class="p-4 bg-rose-50/70 rounded-xl border border-rose-100">
-                            <div class="flex items-center gap-2 mb-2 text-rose-800 font-semibold text-sm">
-                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
-                                <h4>Subtes Membutuhkan Perhatian Tambahan</h4>
+                            <div class="p-3 bg-amber-50/70 rounded-lg border border-amber-100">
+                                <span class="font-bold text-amber-900 block mb-1">⚠️ Area Butuh Pengembangan &amp; Penguatan:</span>
+                                <p class="text-slate-700" id="rep-box4-development">-</p>
                             </div>
-                            <ul id="acc-weaknesses" class="text-xs text-slate-700 space-y-1.5 list-disc list-inside">
-                                <!-- Injected -->
-                            </ul>
                         </div>
-                    </div>
 
-                    <!-- Strategy Recommendations -->
-                    <div class="p-4 bg-blue-50/70 rounded-xl border border-blue-100">
-                        <div class="flex items-center gap-2 mb-2 text-blue-800 font-semibold text-sm">
-                            <i data-lucide="compass" class="w-4 h-4"></i>
-                            <h4>Rekomendasi Strategi Belajar Adaptif</h4>
-                        </div>
-                        <div id="acc-recommendation" class="text-xs text-slate-700 space-y-2">
-                            <!-- Injected -->
+                        <div class="p-3.5 bg-indigo-50/60 rounded-lg border border-indigo-100">
+                            <span class="font-extrabold text-indigo-900 block mb-1 text-xs">🏠 Yang Dapat Dibantu di Rumah (Strategi Support Orang Tua):</span>
+                            <p class="text-slate-700 leading-relaxed" id="rep-box4-home-support">-</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- TAB 2: Detail Hasil Per Tryout -->
-                <div id="tab-single-content" class="hidden space-y-6">
-                    <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <label class="text-xs font-bold text-slate-700">Pilih Seri Tryout:</label>
-                        <select id="single-to-selector" onchange="renderSingleTryoutView()" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                            <!-- Injected -->
-                        </select>
+                <!-- BOX INDEKS NO 5 - RENCANA TINDAK LANJUT AKADEMIK -->
+                <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-3 shadow-sm">
+                    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                        <span class="w-6 h-6 rounded-full bg-brand-700 text-white font-black text-xs flex items-center justify-center">5</span>
+                        <h3 class="text-xs font-bold uppercase tracking-wide text-slate-900">Rencana Tindak Lanjut Akademik (Berdasarkan Kategori Mapel)</h3>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
-                        <div class="bg-white p-4 rounded-xl border border-slate-200">
-                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Profil Kemampuan Subtes (Vs Rata-rata Kelas)</h3>
-                            <div class="relative h-60 w-full flex items-center justify-center">
-                                <canvas id="singleRadarChart"></canvas>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse border border-slate-200">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
+                                    <th class="p-2 border-r border-slate-200 w-1/5">Kategori Mapel</th>
+                                    <th class="p-2 border-r border-slate-200 w-1/5">Kondisi Saat Ini</th>
+                                    <th class="p-2 border-r border-slate-200 w-1/5">Tujuan Target</th>
+                                    <th class="p-2 border-r border-slate-200 w-1/5">Strategi Aksi</th>
+                                    <th class="p-2 w-1/5">Indikator Kemajuan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rep-box5-table" class="divide-y divide-slate-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- BOX INDEKS NO 6 - REKOMENDASI PERKULIAHAN & STRATEGI BELAJAR -->
+                <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-3 shadow-sm">
+                    <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                        <span class="w-6 h-6 rounded-full bg-brand-700 text-white font-black text-xs flex items-center justify-center">6</span>
+                        <h3 class="text-xs font-bold uppercase tracking-wide text-slate-900">Rekomendasi Perkuliahan &amp; Saran Strategi Belajar</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <!-- Rekomendasi Jurusan -->
+                        <div class="p-3.5 bg-sky-50/70 rounded-lg border border-sky-100 space-y-2">
+                            <span class="font-extrabold text-sky-900 flex items-center gap-1.5 text-xs">
+                                <i data-lucide="compass" class="w-4 h-4 text-sky-700"></i>
+                                Rekomendasi Program Studi / Perguruan Tinggi:
+                            </span>
+                            <div id="rep-box6-majors" class="space-y-1.5 text-slate-700">
                             </div>
                         </div>
 
-                        <div class="space-y-3">
-                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Rincian Per Subtes</h3>
-                            <div id="single-subject-breakdown" class="space-y-2 text-xs">
-                                <!-- Progress bars injected -->
+                        <!-- Saran Strategi Belajar -->
+                        <div class="p-3.5 bg-emerald-50/70 rounded-lg border border-emerald-100 space-y-2">
+                            <span class="font-extrabold text-emerald-900 flex items-center gap-1.5 text-xs">
+                                <i data-lucide="book-open-check" class="w-4 h-4 text-emerald-700"></i>
+                                Saran Strategi Belajar Personal:
+                            </span>
+                            <div id="rep-box6-strategy" class="space-y-1.5 text-slate-700 leading-relaxed">
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- FOOTNOTE WARNA ABU-ABU, FONT SANGAT KECIL & ITALIC -->
+                <div class="pt-4 border-t border-slate-300 mt-6">
+                    <p class="text-[9px] text-slate-500 italic leading-snug">
+                        Tentang laporan ini. Laporan ini menggambarkan posisi dan perkembangan siswa berdasarkan asesmen yang tersedia, bukan penilaian permanen terhadap kemampuannya. Perbandingan dengan angkatan menunjukkan posisi relatif terhadap kelompok pembanding di MAU MBI Amanatul Ummah Surabaya, bukan standar nasional. Perubahan antarasesmen dibaca sebagai pergeseran posisi karena tingkat kesulitan setiap TO berbeda. Data yang belum tersedia ditandai "—" dan tidak dibaca sebagai nilai nol. Indikasi profil akademik perlu dikonfirmasi dengan data berikutnya serta minat dan preferensi siswa.
+                    </p>
                 </div>
 
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 no-print">
-        <p>© 2026 LPP Amanatul Ummah • Multi-Tryout Academic Progress Tracking System</p>
+    <!-- MODAL KELOLA TRYOUT -->
+    <div id="manage-to-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-100">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-brand-600"></i>
+                    <h3 class="text-sm font-extrabold uppercase tracking-wide text-slate-900">Kelola Data Tryout</h3>
+                </div>
+                <button onclick="closeManageTOModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-500">Daftar sesi Tryout yang terdaftar dalam analisis akumulasi:</p>
+
+            <div id="manage-to-list" class="divide-y divide-slate-100 text-xs max-h-60 overflow-y-auto custom-scrollbar border border-slate-200 rounded-lg p-2 bg-slate-50">
+            </div>
+
+            <div class="pt-2 flex items-center justify-between">
+                <button onclick="resetToDefaultData()" class="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-bold border border-rose-200 flex items-center gap-1">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    <span>Reset Data bawaan</span>
+                </button>
+                <button onclick="closeManageTOModal()" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold shadow">
+                    Selesai
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footbar App -->
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500 no-print">
+        <p>&copy; 2026 MAU MBI Amanatul Ummah Surabaya • Asesmen Akumulasi Tryout Terintegrasi</p>
     </footer>
 
+    <!-- JS ENGINE DENGAN FIX RATA-RATA ANGKATAN & FORMAT PARSING EXCEL -->
     <script>
-        // Default initial data for Tryout 1 (22 Agustus 2026)
-        const initialTryoutsData = [
-            {
-                id: 'TO-1',
-                title: 'Tryout 1 - 22 Agt 2026',
-                students: [
-                    { no: 1, id: '2601001', name: 'ACHMAD FARIH NAILAL M', ina: 75, eng: 68, mat: 82, matlan: 85, fis: 78, bio: 80, kim: 88, total: 556, avg: 79.4, rank: 1 },
-                    { no: 2, id: '2601002', name: 'M. ATHARIZZ CALIEF', ina: 70, eng: 72, mat: 80, matlan: 88, fis: 75, bio: 78, kim: 82, total: 545, avg: 77.9, rank: 2 },
-                    { no: 3, id: '2601003', name: 'NAURA SHAFA ANNISA', ina: 80, eng: 85, mat: 70, matlan: 72, fis: 68, bio: 84, kim: 76, total: 539, avg: 77.0, rank: 3 },
-                    { no: 4, id: '2601004', name: 'AHMAD ZAKI YAMANI', ina: 68, eng: 65, mat: 85, matlan: 80, fis: 82, bio: 70, kim: 84, total: 534, avg: 76.3, rank: 4 },
-                    { no: 5, id: '2601005', name: 'FATHIR AL FARISI', ina: 72, eng: 70, mat: 78, matlan: 75, fis: 76, bio: 78, kim: 80, total: 529, avg: 75.6, rank: 5 },
-                    { no: 6, id: '2601006', name: 'SITI NUR HALIZA', ina: 82, eng: 78, mat: 65, matlan: 68, fis: 70, bio: 82, kim: 74, total: 519, avg: 74.1, rank: 6 },
-                    { no: 7, id: '2601007', name: 'RAYHAN AHMAD PRATAMA', ina: 65, eng: 62, mat: 80, matlan: 82, fis: 75, bio: 68, kim: 81, total: 513, avg: 73.3, rank: 7 },
-                    { no: 8, id: '2601008', name: 'AULIA RAHMAWATI', ina: 78, eng: 80, mat: 62, matlan: 60, fis: 65, bio: 85, kim: 72, total: 502, avg: 71.7, rank: 8 },
-                    { no: 9, id: '2601009', name: 'MUHAMMAD RIFQI AZHAR', ina: 66, eng: 64, mat: 75, matlan: 78, fis: 72, bio: 66, kim: 78, total: 499, avg: 71.3, rank: 9 },
-                    { no: 10, id: '2601010', name: 'KHOIRUN NISA', ina: 75, eng: 72, mat: 64, matlan: 62, fis: 68, bio: 78, kim: 70, total: 489, avg: 69.9, rank: 10 },
-                    { no: 11, id: '2601011', name: 'BIMA ARYA PUTRA', ina: 60, eng: 58, mat: 76, matlan: 74, fis: 78, bio: 60, kim: 75, total: 481, avg: 68.7, rank: 11 },
-                    { no: 12, id: '2601012', name: 'DEWI ANGGRAINY', ina: 74, eng: 75, mat: 60, matlan: 58, fis: 62, bio: 76, kim: 68, total: 473, avg: 67.6, rank: 12 },
-                    { no: 13, id: '2601013', name: 'FARHAN MAULANA', ina: 62, eng: 60, mat: 72, matlan: 70, fis: 74, bio: 62, kim: 70, total: 470, avg: 67.1, rank: 13 },
-                    { no: 14, id: '2601014', name: 'NABILAH ZAHRA', ina: 76, eng: 74, mat: 58, matlan: 55, fis: 60, bio: 75, kim: 65, total: 463, avg: 66.1, rank: 14 },
-                    { no: 15, id: '2601015', name: 'DIMAS ADITYA', ina: 58, eng: 55, mat: 74, matlan: 72, fis: 70, bio: 58, kim: 72, total: 459, avg: 65.6, rank: 15 },
-                    { no: 16, id: '2601016', name: 'INTAN PERMATASARI', ina: 72, eng: 70, mat: 55, matlan: 52, fis: 58, bio: 72, kim: 62, total: 441, avg: 63.0, rank: 16 },
-                    { no: 17, id: '2601017', name: 'SYAHRUL RAMADHAN', ina: 60, eng: 56, mat: 68, matlan: 65, fis: 66, bio: 56, kim: 68, total: 439, avg: 62.7, rank: 17 },
-                    { no: 18, id: '2601018', name: 'NADIA PUTRI', ina: 70, eng: 68, mat: 52, matlan: 50, fis: 55, bio: 70, kim: 60, total: 425, avg: 60.7, rank: 18 },
-                    { no: 19, id: '2601019', name: 'REZA HARDIANSYAH', ina: 55, eng: 52, mat: 66, matlan: 64, fis: 65, bio: 54, kim: 65, total: 421, avg: 60.1, rank: 19 },
-                    { no: 20, id: '2601020', name: 'ANISA RAHMAN', ina: 68, eng: 65, mat: 50, matlan: 48, fis: 52, bio: 68, kim: 58, total: 409, avg: 58.4, rank: 20 },
-                    { no: 21, id: '2601021', name: 'ALIF NUR HIDAYAT', ina: 52, eng: 50, mat: 65, matlan: 62, fis: 60, bio: 50, kim: 62, total: 401, avg: 57.3, rank: 21 },
-                    { no: 22, id: '2601022', name: 'LUTFIAH SARI', ina: 66, eng: 62, mat: 48, matlan: 45, fis: 50, bio: 65, kim: 55, total: 391, avg: 55.9, rank: 22 },
-                    { no: 23, id: '2601023', name: 'IRFAN HAKIM', ina: 50, eng: 48, mat: 62, matlan: 60, fis: 58, bio: 48, kim: 60, total: 386, avg: 55.1, rank: 23 },
-                    { no: 24, id: '2601024', name: 'TANIA SABRINA', ina: 64, eng: 60, mat: 45, matlan: 42, fis: 48, bio: 62, kim: 52, total: 373, avg: 53.3, rank: 24 },
-                    { no: 25, id: '2601025', name: 'GALANG SATRIA', ina: 48, eng: 45, mat: 60, matlan: 58, fis: 55, bio: 46, kim: 58, total: 370, avg: 52.9, rank: 25 },
-                    { no: 26, id: '2601026', name: 'MAYA ROSITA', ina: 62, eng: 58, mat: 42, matlan: 40, fis: 45, bio: 60, kim: 50, total: 357, avg: 51.0, rank: 26 },
-                    { no: 27, id: '2601027', name: 'ANDI WIJAYA', ina: 45, eng: 42, mat: 58, matlan: 55, fis: 52, bio: 44, kim: 55, total: 351, avg: 50.1, rank: 27 },
-                    { no: 28, id: '2601028', name: 'RINA FITRIANI', ina: 60, eng: 55, mat: 40, matlan: 38, fis: 42, bio: 58, kim: 48, total: 341, avg: 48.7, rank: 28 },
-                    { no: 29, id: '2601029', name: 'FAJAR HIDAYAT', ina: 42, eng: 40, mat: 55, matlan: 52, fis: 50, bio: 42, kim: 52, total: 333, avg: 47.6, rank: 29 },
-                    { no: 30, id: '2601030', name: 'BELLA AMALIA', ina: 58, eng: 52, mat: 38, matlan: 35, fis: 40, bio: 55, kim: 45, total: 323, avg: 46.1, rank: 30 },
-                    { no: 31, id: '2601031', name: 'DANIEL KURNIAWAN', ina: 40, eng: 38, mat: 52, matlan: 50, fis: 48, bio: 40, kim: 50, total: 318, avg: 45.4, rank: 31 },
-                    { no: 32, id: '2601032', name: 'CITRA LESTARI', ina: 56, eng: 50, mat: 35, matlan: 32, fis: 38, bio: 52, kim: 42, total: 305, avg: 43.6, rank: 32 },
-                    { no: 33, id: '2601033', name: 'EKO PRASETYO', ina: 38, eng: 35, mat: 50, matlan: 48, fis: 45, bio: 38, kim: 48, total: 302, avg: 43.1, rank: 33 },
-                    { no: 34, id: '2601034', name: 'GITA GUTAMA', ina: 54, eng: 48, mat: 32, matlan: 30, fis: 35, bio: 50, kim: 40, total: 289, avg: 41.3, rank: 34 },
-                    { no: 35, id: '2601035', name: 'HENDRA GUNAWAN', ina: 35, eng: 32, mat: 48, matlan: 45, fis: 42, bio: 35, kim: 45, total: 282, avg: 40.3, rank: 35 },
-                    { no: 36, id: '2601036', name: 'INDAH WATI', ina: 52, eng: 45, mat: 30, matlan: 28, fis: 32, bio: 48, kim: 38, total: 273, avg: 39.0, rank: 36 },
-                    { no: 37, id: '2601037', name: 'JOKO SUSILO', ina: 32, eng: 30, mat: 45, matlan: 42, fis: 40, bio: 32, kim: 42, total: 263, avg: 37.6, rank: 37 },
-                    { no: 38, id: '2601038', name: 'KARINA MAYA', ina: 50, eng: 42, mat: 28, matlan: 25, fis: 30, bio: 45, kim: 35, total: 255, avg: 36.4, rank: 38 },
-                    { no: 39, id: '2601039', name: 'LEO SANTOSO', ina: 30, eng: 28, mat: 42, matlan: 40, fis: 38, bio: 30, kim: 40, total: 248, avg: 35.4, rank: 39 },
-                    { no: 40, id: '2601040', name: 'NINA SAFITRI', ina: 48, eng: 40, mat: 25, matlan: 22, fis: 28, bio: 42, kim: 32, total: 237, avg: 33.9, rank: 40 },
-                    { no: 41, id: '2601041', name: 'OSCAR RAMOS', ina: 28, eng: 25, mat: 40, matlan: 38, fis: 35, bio: 28, kim: 38, total: 232, avg: 33.1, rank: 41 },
-                    { no: 42, id: '2601042', name: 'PUTRI WULANDARI', ina: 45, eng: 38, mat: 22, matlan: 20, fis: 25, bio: 40, kim: 30, total: 220, avg: 31.4, rank: 42 },
-                    { no: 43, id: '2601043', name: 'QIMMY ALBERT', ina: 25, eng: 22, mat: 38, matlan: 35, fis: 32, bio: 25, kim: 35, total: 212, avg: 30.3, rank: 43 },
-                    { no: 44, id: '2601044', name: 'RUDI HERMAWAN', ina: 42, eng: 35, mat: 20, matlan: 18, fis: 22, bio: 38, kim: 28, total: 203, avg: 29.0, rank: 44 },
-                    { no: 45, id: '2601045', name: 'SARI INDAH', ina: 22, eng: 20, mat: 35, matlan: 32, fis: 30, bio: 22, kim: 32, total: 193, avg: 27.6, rank: 45 },
-                    { no: 46, id: '2601046', name: 'TAUFIK HIDAYAT', ina: 40, eng: 32, mat: 18, matlan: 15, fis: 20, bio: 35, kim: 25, total: 185, avg: 26.4, rank: 46 },
-                    { no: 47, id: '2601047', name: 'UTAMI NINGSIH', ina: 20, eng: 18, mat: 32, matlan: 30, fis: 28, bio: 20, kim: 30, total: 178, avg: 25.4, rank: 47 },
-                    { no: 48, id: '2601048', name: 'VICKY PRASETYA', ina: 38, eng: 30, mat: 15, matlan: 12, fis: 18, bio: 32, kim: 22, total: 167, avg: 23.9, rank: 48 },
-                    { no: 49, id: '2601049', name: 'WAHYU UTOMO', ina: 18, eng: 15, mat: 30, matlan: 28, fis: 25, bio: 18, kim: 28, total: 162, avg: 23.1, rank: 49 },
-                    { no: 50, id: '2601050', name: 'XENA ZULFA', ina: 35, eng: 28, mat: 12, matlan: 10, fis: 15, bio: 30, kim: 20, total: 150, avg: 21.4, rank: 50 },
-                    { no: 51, id: '2601051', name: 'YUDHA PERTAMA', ina: 15, eng: 12, mat: 28, matlan: 25, fis: 22, bio: 15, kim: 25, total: 142, avg: 20.3, rank: 51 },
-                    { no: 52, id: '2601052', name: 'ZAHRA AMALIA', ina: 32, eng: 25, mat: 10, matlan: 8, fis: 12, bio: 28, kim: 18, total: 133, avg: 19.0, rank: 52 },
-                    { no: 53, id: '2601053', name: 'AGUS SETIAWAN', ina: 12, eng: 10, mat: 25, matlan: 22, fis: 20, bio: 12, kim: 22, total: 123, avg: 17.6, rank: 53 },
-                    { no: 54, id: '2601054', name: 'BAYU PERDANA', ina: 30, eng: 22, mat: 8, matlan: 5, fis: 10, bio: 25, kim: 15, total: 115, avg: 16.4, rank: 54 },
-                    { no: 55, id: '2601055', name: 'CHRISTINE MAYA', ina: 10, eng: 8, mat: 22, matlan: 20, fis: 18, bio: 10, kim: 20, total: 108, avg: 15.4, rank: 55 },
-                    { no: 56, id: '2601056', name: 'DONI SEBASTIAN', ina: 28, eng: 20, mat: 5, matlan: 4, fis: 8, bio: 22, kim: 12, total: 99, avg: 14.1, rank: 56 },
-                    { no: 57, id: '2601057', name: 'ELSA SAFIRA', ina: 8, eng: 5, mat: 20, matlan: 18, fis: 15, bio: 8, kim: 18, total: 92, avg: 13.1, rank: 57 },
-                    { no: 58, id: '2601058', name: 'FERDIAN ZAKARIA', ina: 25, eng: 18, mat: 4, matlan: 2, fis: 5, bio: 20, kim: 10, total: 84, avg: 12.0, rank: 58 },
-                    { no: 59, id: '2601059', name: 'GABRIELA SILVA', ina: 5, eng: 4, mat: 18, matlan: 15, fis: 12, bio: 5, kim: 15, total: 74, avg: 10.6, rank: 59 },
-                    { no: 60, id: '2601060', name: 'HADI WIJAYA', ina: 22, eng: 15, mat: 2, matlan: 1, fis: 4, bio: 18, kim: 8, total: 70, avg: 10.0, rank: 60 },
-                    { no: 61, id: '2601061', name: 'INTAN NURAINI', ina: 4, eng: 2, mat: 15, matlan: 12, fis: 10, bio: 4, kim: 12, total: 59, avg: 8.4, rank: 61 }
-                ]
-            }
+        const initialStudentsData = [
+            {"id": "10138", "nama": "RAIHAN VALLEN MAULANA SAIF", "kelas": "12 MAU 3", "noPeserta": "10138", "toData": {"TO 1": {"ina": 9.33, "eng": 9.33, "mat": 4.0, "mp1": 8.0, "mp2": 5.33, "rata2": 7.2}, "TO 2": {"ina": 9.33, "eng": 9.33, "mat": 6.0, "mp1": 6.67, "mp2": 3.33, "rata2": 6.93}, "TO 3": {"ina": 6.0, "eng": 8.67, "mat": 4.67, "mp1": 6.0, "mp2": 7.33, "rata2": 6.53}, "TO 4": {"ina": 8.0, "eng": 9.33, "mat": 5.33, "mp1": 6.67, "mp2": 8.0, "rata2": 7.47}, "TO 5": {"ina": 7.33, "eng": 8.67, "mat": 4.0, "mp1": 8.67, "mp2": 8.0, "rata2": 7.33}}},
+            {"id": "70183", "nama": "NAURA ATTAYA PUTRI", "kelas": "12 MBI 2", "noPeserta": "70183", "toData": {"TO 1": {"ina": 8.0, "eng": 8.67, "mat": 5.33, "mp1": 8.67, "mp2": 4.67, "rata2": 7.07}, "TO 2": {"ina": 8.0, "eng": 9.33, "mat": 5.33, "mp1": 7.33, "mp2": 6.0, "rata2": 7.2}, "TO 3": {"ina": 5.33, "eng": 8.0, "mat": 3.33, "mp1": 6.0, "mp2": 6.67, "rata2": 5.87}, "TO 4": {"ina": 6.67, "eng": 10.0, "mat": 2.67, "mp1": 7.33, "mp2": 8.0, "rata2": 6.93}, "TO 5": {"ina": 7.33, "eng": 10.0, "mat": 6.0, "mp1": 8.0, "mp2": 8.67, "rata2": 8.0}}},
+            {"id": "70173", "nama": "M. ABDULLOH AZZAM AL GHOZY", "kelas": "12 MBI 1", "noPeserta": "70173", "toData": {"TO 1": {"ina": 8.0, "eng": 7.33, "mat": 6.0, "mp1": 8.0, "mp2": 5.33, "rata2": 6.93}, "TO 2": {"ina": 7.33, "eng": 8.67, "mat": 3.33, "mp1": 6.67, "mp2": 2.67, "rata2": 5.73}, "TO 3": {"ina": 7.33, "eng": 2.67, "mat": 2.0, "mp1": 3.33, "mp2": 4.67, "rata2": 4.0}, "TO 4": {"ina": 6.0, "eng": 2.67, "mat": 4.0, "mp1": 5.33, "mp2": 6.67, "rata2": 4.93}, "TO 5": {"ina": 7.33, "eng": 6.0, "mat": 4.0, "mp1": 6.67, "mp2": 4.67, "rata2": 5.73}}},
+            {"id": "10128", "nama": "RAHMA YULIATI NUR SHOLICHA", "kelas": "12 MAU 2", "noPeserta": "10128", "toData": {"TO 1": {"ina": 9.33, "eng": 8.0, "mat": 5.33, "mp1": 5.33, "mp2": 5.33, "rata2": 6.67}, "TO 2": {"ina": 7.33, "eng": 8.0, "mat": 5.33, "mp1": 4.67, "mp2": 5.33, "rata2": 6.13}, "TO 3": {"ina": 4.67, "eng": 6.67, "mat": 3.33, "mp1": 4.0, "mp2": 4.67, "rata2": 4.67}, "TO 4": {"ina": 5.33, "eng": 6.0, "mat": 2.67, "mp1": 5.33, "mp2": 4.0, "rata2": 4.67}, "TO 5": {"ina": 6.67, "eng": 8.0, "mat": 3.33, "mp1": 6.0, "mp2": 5.33, "rata2": 5.87}}},
+            {"id": "70167", "nama": "AHMAD RISQI DWI AL-AZFAR", "kelas": "12 MBI 1", "noPeserta": "70167", "toData": {"TO 1": {"ina": 6.0, "eng": 5.33, "mat": 5.33, "mp1": 8.0, "mp2": 6.67, "rata2": 6.27}, "TO 2": {"ina": 8.0, "eng": 8.0, "mat": 2.67, "mp1": 6.0, "mp2": 5.33, "rata2": 6.0}, "TO 3": {"ina": 5.33, "eng": 4.67, "mat": 2.0, "mp1": 6.0, "mp2": 4.0, "rata2": 4.4}, "TO 4": {"ina": 7.33, "eng": 6.67, "mat": 2.0, "mp1": 5.33, "mp2": 2.67, "rata2": 4.8}, "TO 5": {"ina": 8.0, "eng": 6.67, "mat": 4.0, "mp1": 7.33, "mp2": 5.33, "rata2": 6.27}}},
+            {"id": "10115", "nama": "MOHAMMAD RAFA ALDIANSYAH", "kelas": "12 MAU 1", "noPeserta": "10115", "toData": {"TO 1": {"ina": 8.0, "eng": 8.0, "mat": 4.67, "mp1": 6.0, "mp2": 4.0, "rata2": 6.13}, "TO 2": {"ina": 7.33, "eng": 7.33, "mat": 3.33, "mp1": 5.33, "mp2": 4.0, "rata2": 5.47}, "TO 3": {"ina": 6.0, "eng": 6.0, "mat": 2.67, "mp1": 4.67, "mp2": 4.0, "rata2": 4.67}, "TO 4": {"ina": 6.67, "eng": 6.67, "mat": 3.33, "mp1": 5.33, "mp2": 4.67, "rata2": 5.33}, "TO 5": {"ina": 7.33, "eng": 7.33, "mat": 3.33, "mp1": 6.0, "mp2": 5.33, "rata2": 5.87}}}
         ];
 
-        const subjects = [
-            { key: 'ina', name: 'Bahasa Indonesia' },
-            { key: 'eng', name: 'Bahasa Inggris' },
-            { key: 'mat', name: 'Matematika Dasar' },
-            { key: 'matlan', name: 'Matematika Lanjut' },
-            { key: 'fis', name: 'Fisika' },
-            { key: 'bio', name: 'Biologi' },
-            { key: 'kim', name: 'Kimia' }
-        ];
-
-        // Global State
-        let allTryouts = [];
-        let accumulatedStudentsMap = {}; // Key: Student ID or Name
-        let batchTrendChartInstance = null;
-        let studentTrendChartInstance = null;
-        let singleRadarChartInstance = null;
-        let currentSelectedStudentId = null;
-
-        window.onload = function() {
-            lucide.createIcons();
-            loadTryoutsFromStorage();
-            processAccumulatedData();
-            renderDashboard();
+        let masterStudentsData = JSON.parse(JSON.stringify(initialStudentsData));
+        let toKeys = ["TO 1", "TO 2", "TO 3", "TO 4", "TO 5"];
+        const subtestKeys = ["ina", "eng", "mat", "mp1", "mp2"];
+        const subtestNames = {
+            "ina": "Bahasa Indonesia",
+            "eng": "Bahasa Inggris",
+            "mat": "Matematika",
+            "mp1": "Pilihan 1",
+            "mp2": "Pilihan 2"
         };
 
-        function loadTryoutsFromStorage() {
-            const saved = localStorage.getItem('TRYOUT_SAINTEK_MULTI_DATA_V1');
-            if (saved) {
-                try {
-                    allTryouts = JSON.parse(saved);
-                } catch (e) {
-                    allTryouts = JSON.parse(JSON.stringify(initialTryoutsData));
+        let overallFluctuationChartInstance = null;
+        let individualChartInstance = null;
+        let angkatanSubtestAvg = {};
+        let angkatanOverallAvg = 0;
+
+        // Inisialisasi Aplikasi
+        window.addEventListener('DOMContentLoaded', () => {
+            initDatabase();
+            lucide.createIcons();
+        });
+
+        // FUNGSI PEMBANTU UNTUK KONVERSI ANGKA DARI EXCEL AGAR BEBAS NaN
+        function safeParseFloat(val) {
+            if (val === undefined || val === null || val === "") return 0;
+            if (typeof val === 'string') {
+                val = val.replace(',', '.').trim(); // Menangani koma desimal dari Excel
+            }
+            let parsed = parseFloat(val);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        function initDatabase() {
+            // 1. Deteksi Sesi TO Secara Dinamis dari Data Siswa
+            let dynamicTOs = new Set();
+            masterStudentsData.forEach(s => {
+                if (s.toData) {
+                    Object.keys(s.toData).forEach(k => dynamicTOs.add(k));
                 }
+            });
+
+            if (dynamicTOs.size > 0) {
+                toKeys = Array.from(dynamicTOs).sort((a, b) => {
+                    let numA = parseInt(a.replace(/\D/g, '')) || 0;
+                    let numB = parseInt(b.replace(/\D/g, '')) || 0;
+                    return numA - numB;
+                });
+            }
+
+            // Update Label Header TO Range
+            if (toKeys.length > 0) {
+                document.getElementById('to-range-label').innerText = `${toKeys[0]} - ${toKeys[toKeys.length - 1]}`;
             } else {
-                allTryouts = JSON.parse(JSON.stringify(initialTryoutsData));
-                saveTryoutsToStorage();
+                document.getElementById('to-range-label').innerText = 'Tidak ada data TO';
             }
-        }
 
-        function saveTryoutsToStorage() {
-            localStorage.setItem('TRYOUT_SAINTEK_MULTI_DATA_V1', JSON.stringify(allTryouts));
-        }
+            // 2. Kalkulasi Rata-Rata Nilai Angkatan (Semua Ujian Seluruh Siswa)
+            let totalTORata2Sum = 0;
+            let totalTORata2Count = 0;
 
-        function processAccumulatedData() {
-            accumulatedStudentsMap = {};
+            subtestKeys.forEach(st => angkatanSubtestAvg[st] = { sum: 0, count: 0 });
 
-            allTryouts.forEach((to, toIndex) => {
-                to.students.forEach(student => {
-                    const key = String(student.id || student.name).trim().toLowerCase();
-                    
-                    if (!accumulatedStudentsMap[key]) {
-                        accumulatedStudentsMap[key] = {
-                            id: student.id,
-                            name: student.name,
-                            history: []
-                        };
+            masterStudentsData.forEach(s => {
+                let sSum = 0;
+                let sCount = 0;
+
+                toKeys.forEach(to => {
+                    if (s.toData && s.toData[to]) {
+                        subtestKeys.forEach(st => {
+                            let score = safeParseFloat(s.toData[to][st]);
+                            if (score !== undefined && score !== null) {
+                                angkatanSubtestAvg[st].sum += score;
+                                angkatanSubtestAvg[st].count++;
+                            }
+                        });
+
+                        let toAvg = safeParseFloat(s.toData[to].rata2);
+                        if (toAvg > 0 || (s.toData[to].rata2 !== undefined && s.toData[to].rata2 !== null)) {
+                            sSum += toAvg;
+                            sCount++;
+                            totalTORata2Sum += toAvg;
+                            totalTORata2Count++;
+                        }
                     }
-
-                    accumulatedStudentsMap[key].history.push({
-                        toId: to.id,
-                        toTitle: to.title,
-                        toIndex: toIndex,
-                        data: student
-                    });
-                });
-            });
-
-            // Calculate derived metrics for each student
-            Object.keys(accumulatedStudentsMap).forEach(key => {
-                const s = accumulatedStudentsMap[key];
-                const h = s.history;
-                
-                // Sort history by tryout index
-                h.sort((a, b) => a.toIndex - b.toIndex);
-
-                const latestEntry = h[h.length - 1].data;
-                const firstEntry = h[0].data;
-
-                s.latestData = latestEntry;
-                s.firstData = firstEntry;
-                s.totalTOs = h.length;
-
-                // Cumulative averages per subject
-                s.subjectAverages = {};
-                subjects.forEach(sub => {
-                    const sum = h.reduce((acc, curr) => acc + (Number(curr.data[sub.key]) || 0), 0);
-                    s.subjectAverages[sub.key] = Number((sum / h.length).toFixed(1));
                 });
 
-                // Overall accumulative average
-                const totalAvgSum = h.reduce((acc, curr) => acc + (Number(curr.data.avg) || 0), 0);
-                s.overallAccumulatedAvg = Number((totalAvgSum / h.length).toFixed(1));
+                s.overallAvg = sCount > 0 ? (sSum / sCount) : 0;
 
-                // Highest TO Score
-                s.highestTotalScore = Math.max(...h.map(item => item.data.total));
+                // Kategori Siswa
+                if (s.overallAvg >= 6.0) s.category = "Kelompok Tinggi";
+                else if (s.overallAvg >= 5.0) s.category = "Kelompok Menengah";
+                else s.category = "Kelompok Perlu Penguatan";
 
-                // Delta Calculation (Latest TO vs Previous TO or First TO)
-                if (h.length > 1) {
-                    const prevEntry = h[h.length - 2].data;
-                    s.deltaAvg = Number((latestEntry.avg - prevEntry.avg).toFixed(1));
+                // Tren Progres Siswa
+                let validTOs = toKeys.filter(to => s.toData && s.toData[to] && s.toData[to].rata2 !== undefined);
+                if (validTOs.length >= 2) {
+                    let first = safeParseFloat(s.toData[validTOs[0]].rata2);
+                    let last = safeParseFloat(s.toData[validTOs[validTOs.length - 1]].rata2);
+                    s.delta = last - first;
+                    if (s.delta > 0.2) s.trend = "UP";
+                    else if (s.delta < -0.2) s.trend = "DOWN";
+                    else s.trend = "STABLE";
                 } else {
-                    s.deltaAvg = 0;
+                    s.delta = 0;
+                    s.trend = "STABLE";
                 }
-
-                // Growth Trend Classification
-                if (s.deltaAvg >= 2.0) s.trend = 'UP';
-                else if (s.deltaAvg <= -2.0) s.trend = 'DOWN';
-                else s.trend = 'STABLE';
             });
-        }
 
-        function renderDashboard() {
-            document.getElementById('tryout-count-badge').textContent = allTryouts.length;
+            // Rata-Rata Nilai Angkatan Keseluruhan dari Seluruh TO
+            angkatanOverallAvg = totalTORata2Count > 0 ? (totalTORata2Sum / totalTORata2Count) : 0;
+
+            // Rata-Rata Per Mapel Seluruh Siswa
+            subtestKeys.forEach(st => {
+                angkatanSubtestAvg[st].avg = angkatanSubtestAvg[st].count > 0 ? (angkatanSubtestAvg[st].sum / angkatanSubtestAvg[st].count) : 0;
+            });
+
+            // Update UI Ringkasan Populasi & Badges
+            const totalCount = masterStudentsData.length;
+            document.getElementById('badge-count').innerText = totalCount;
+            document.getElementById('total-master-count').innerText = `${totalCount} Siswa`;
+
+            let tinggi = masterStudentsData.filter(s => s.category === "Kelompok Tinggi").length;
+            let menengah = masterStudentsData.filter(s => s.category === "Kelompok Menengah").length;
+            let penguatan = masterStudentsData.filter(s => s.category === "Kelompok Perlu Penguatan").length;
+
+            document.getElementById('box-tinggi-count').innerText = tinggi;
+            document.getElementById('box-tinggi-pct').innerText = totalCount > 0 ? `${((tinggi / totalCount) * 100).toFixed(1)}%` : '0%';
             
-            const studentList = Object.values(accumulatedStudentsMap);
-            document.getElementById('stat-total-students').textContent = studentList.length;
+            document.getElementById('box-menengah-count').innerText = menengah;
+            document.getElementById('box-menengah-pct').innerText = totalCount > 0 ? `${((menengah / totalCount) * 100).toFixed(1)}%` : '0%';
 
-            if (studentList.length > 0) {
-                // Latest Batch Average
-                const latestBatchTotalAvg = studentList.reduce((acc, curr) => acc + curr.latestData.avg, 0) / studentList.length;
-                document.getElementById('stat-latest-avg').textContent = latestBatchTotalAvg.toFixed(1);
+            document.getElementById('box-penguatan-count').innerText = penguatan;
+            document.getElementById('box-penguatan-pct').innerText = totalCount > 0 ? `${((penguatan / totalCount) * 100).toFixed(1)}%` : '0%';
 
-                // Improving students count
-                const improvingCount = studentList.filter(s => s.trend === 'UP').length;
-                document.getElementById('stat-improving-count').textContent = improvingCount;
-            }
+            // Populate Filter Option Kelas
+            const kelasList = [...new Set(masterStudentsData.map(s => s.kelas))].sort();
+            const kelasSelect = document.getElementById('filter-kelas');
+            kelasSelect.innerHTML = '<option value="ALL">Semua Kelas</option>';
+            kelasList.forEach(k => {
+                let opt = document.createElement('option');
+                opt.value = k;
+                opt.innerText = k;
+                kelasSelect.appendChild(opt);
+            });
 
-            renderBatchTrendChart();
+            renderOverallFluctuationChart();
+            renderAttendanceSummary();
             applyFilters();
         }
 
-        // Render Batch Overall Chart across tryouts
-        function renderBatchTrendChart() {
-            const ctx = document.getElementById('batchTrendChart').getContext('2d');
-            if (batchTrendChartInstance) batchTrendChartInstance.destroy();
+        /* FITUR UPLOAD EXCEL MULTIPLE */
+        async function handleExcelUpload(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
 
-            const labels = allTryouts.map(t => t.title);
-            const dataPoints = allTryouts.map(to => {
-                if (to.students.length === 0) return 0;
-                const total = to.students.reduce((acc, s) => acc + s.avg, 0);
-                return Number((total / to.students.length).toFixed(1));
-            });
+            let fileArray = Array.from(files);
+            let processedCount = 0;
 
-            // Calculate overall growth badge
-            if (dataPoints.length > 1) {
-                const growth = (dataPoints[dataPoints.length - 1] - dataPoints[0]).toFixed(1);
-                const badge = document.getElementById('batch-growth-badge');
-                if (growth >= 0) {
-                    badge.textContent = `+${growth} pt`;
-                    badge.className = "px-2.5 py-1 text-xs font-bold rounded-md bg-emerald-100 text-emerald-800";
-                } else {
-                    badge.textContent = `${growth} pt`;
-                    badge.className = "px-2.5 py-1 text-xs font-bold rounded-md bg-rose-100 text-rose-800";
+            for (let file of fileArray) {
+                try {
+                    let data = await readFileAsArrayBuffer(file);
+                    let workbook = XLSX.read(data, { type: 'array' });
+                    let sheetName = workbook.SheetNames[0];
+                    let worksheet = workbook.Sheets[sheetName];
+                    let json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                    let sessionName = file.name.replace(/\.[^/.]+$/, "").toUpperCase();
+                    if (!sessionName.startsWith("TO") && !sessionName.startsWith("TRYOUT")) {
+                        sessionName = "TO " + sessionName;
+                    }
+
+                    processExcelJSON(json, sessionName);
+                    processedCount++;
+                } catch (err) {
+                    console.error("Error parsing excel file: ", file.name, err);
                 }
-            } else {
-                document.getElementById('batch-growth-badge').textContent = 'Baseline TO 1';
             }
 
-            batchTrendChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Rata-Rata Angkatan',
-                        data: dataPoints,
-                        borderColor: '#0284c7',
-                        backgroundColor: 'rgba(2, 132, 199, 0.1)',
-                        fill: true,
-                        tension: 0.3,
-                        borderWidth: 3,
-                        pointRadius: 5,
-                        pointBackgroundColor: '#0284c7'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { min: 0, max: 100, grid: { color: '#f1f5f9' } },
-                        x: { grid: { display: false } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
+            alert(`Berhasil memproses dan mengakulasi ${processedCount} file Excel Tryout.`);
+            event.target.value = "";
+            initDatabase();
+        }
+
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                let reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = err => reject(err);
+                reader.readAsArrayBuffer(file);
             });
         }
 
-        function applyFilters() {
-            const search = document.getElementById('search-input').value.toLowerCase();
-            const trendFilter = document.getElementById('filter-trend').value;
-            const tierFilter = document.getElementById('filter-tier').value;
-            const sortOrder = document.getElementById('sort-order').value;
+        /* PROSES PARSING JSON EXCEL DENGAN MATEMATIKA WAJIB */
+        function processExcelJSON(rows, defaultSessionName) {
+            rows.forEach((row, idx) => {
+                let noPeserta = String(row["No Peserta"] || row["nopeserta"] || row["NO PESERTA"] || row["ID"] || (10000 + idx)).trim();
+                let nama = String(row["Nama"] || row["NAMA"] || row["Nama Siswa"] || "Siswa " + noPeserta).trim();
+                let kelas = String(row["Kelas"] || row["KELAS"] || "12 MAU").trim();
+                let session = String(row["Sesi"] || row["SESI"] || row["Tryout"] || defaultSessionName).trim();
 
-            let list = Object.values(accumulatedStudentsMap);
-
-            list = list.filter(student => {
-                const matchSearch = student.name.toLowerCase().includes(search) || String(student.id).toLowerCase().includes(search);
+                let ina = safeParseFloat(row["ina"] || row["INA"] || row["Bahasa Indonesia"]);
+                let eng = safeParseFloat(row["eng"] || row["ENG"] || row["Bahasa Inggris"]);
                 
-                let matchTrend = true;
-                if (trendFilter !== 'ALL') matchTrend = student.trend === trendFilter;
+                // PENGAMBILAN DATA MATEMATIKA DARI MATWAJIB
+                let mat = safeParseFloat(
+                    row["matwajib"] || row["MATWAJIB"] || row["Matwajib"] || 
+                    row["Mat Wajib"] || row["MAT WAJIB"] || row["mat_wajib"] || 
+                    row["Matematika Wajib"] || row["MATEMATIKA WAJIB"] || 
+                    row["mat"] || row["MAT"] || row["Matematika"]
+                );
 
-                let matchTier = true;
-                const latestAvg = student.latestData.avg;
-                if (tierFilter === 'Sangat Memuaskan') matchTier = latestAvg >= 70;
-                else if (tierFilter === 'Memuaskan') matchTier = latestAvg >= 55 && latestAvg < 70;
-                else if (tierFilter === 'Baik') matchTier = latestAvg >= 45 && latestAvg < 55;
-                else if (tierFilter === 'Perlu Bimbingan') matchTier = latestAvg < 45;
+                let mp1 = safeParseFloat(row["mp1"] || row["MP1"] || row["Pilihan 1"]);
+                let mp2 = safeParseFloat(row["mp2"] || row["MP2"] || row["Pilihan 2"]);
 
-                return matchSearch && matchTrend && matchTier;
-            });
+                let rata2 = safeParseFloat(row["rata2"] || row["RATA2"] || row["Rata-Rata"]);
+                if (rata2 === 0 && (ina > 0 || eng > 0 || mat > 0 || mp1 > 0 || mp2 > 0)) {
+                    rata2 = parseFloat(((ina + eng + mat + mp1 + mp2) / 5).toFixed(2));
+                }
 
-            // Sorting
-            list.sort((a, b) => {
-                if (sortOrder === 'rank-asc') return a.latestData.rank - b.latestData.rank;
-                if (sortOrder === 'delta-desc') return b.deltaAvg - a.deltaAvg;
-                if (sortOrder === 'name-asc') return a.name.localeCompare(b.name);
-                return 0;
-            });
+                let existingStudent = masterStudentsData.find(s => s.noPeserta === noPeserta || s.nama.toLowerCase() === nama.toLowerCase());
 
-            renderStudentGrid(list);
-        }
-
-        function getTrendBadgeHTML(trend, delta) {
-            if (trend === 'UP') {
-                return `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                    ↗ +${delta}
-                </span>`;
-            } else if (trend === 'DOWN') {
-                return `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1">
-                    ↘ ${delta}
-                </span>`;
-            } else {
-                return `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1">
-                    → ${delta >= 0 ? '+' : ''}${delta}
-                </span>`;
-            }
-        }
-
-        function renderStudentGrid(list) {
-            const grid = document.getElementById('student-grid');
-            const empty = document.getElementById('empty-state');
-            document.getElementById('showing-count').textContent = `Menampilkan ${list.length} dari ${Object.keys(accumulatedStudentsMap).length} siswa`;
-
-            if (list.length === 0) {
-                grid.innerHTML = '';
-                empty.classList.remove('hidden');
-                return;
-            }
-
-            empty.classList.add('hidden');
-            grid.innerHTML = list.map(s => {
-                const latest = s.latestData;
-                const trendBadge = getTrendBadgeHTML(s.trend, s.deltaAvg);
-
-                return `
-                    <div onclick="openStudentModal('${s.id}')" class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between group hover:border-brand-400">
-                        <div>
-                            <div class="flex items-start justify-between gap-2 mb-3">
-                                <div>
-                                    <span class="text-[10px] font-bold tracking-wider uppercase text-slate-400 block mb-0.5">ID: ${s.id}</span>
-                                    <h3 class="font-bold text-slate-900 group-hover:text-brand-600 transition line-clamp-1">${s.name}</h3>
-                                </div>
-                                <div class="flex flex-col items-end gap-1">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                        Rank #${latest.rank}
-                                    </span>
-                                    ${trendBadge}
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-2 my-3 py-2 px-3 bg-slate-50 rounded-lg">
-                                <div>
-                                    <span class="text-[10px] text-slate-500 block">Rata-Rata Terkini</span>
-                                    <span class="text-lg font-extrabold text-slate-900">${latest.avg}</span>
-                                </div>
-                                <div>
-                                    <span class="text-[10px] text-slate-500 block">Rata-Rata Akumulasi</span>
-                                    <span class="text-base font-bold text-brand-700">${s.overallAccumulatedAvg}</span>
-                                </div>
-                            </div>
-
-                            <!-- TO Participation Count -->
-                            <div class="flex items-center justify-between text-[11px] text-slate-500 mb-2">
-                                <span>Jumlah Tryout Diikuti:</span>
-                                <span class="font-semibold text-slate-800">${s.totalTOs} TO</span>
-                            </div>
-                        </div>
-
-                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                            <span class="text-slate-400 font-medium">Klik untuk Laporan Lengkap</span>
-                            <i data-lucide="arrow-right" class="w-4 h-4 text-brand-600 group-hover:translate-x-1 transition-transform"></i>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            lucide.createIcons();
-        }
-
-        function openStudentModal(studentId) {
-            currentSelectedStudentId = studentId;
-            const studentKey = Object.keys(accumulatedStudentsMap).find(k => String(accumulatedStudentsMap[k].id) === String(studentId));
-            const student = accumulatedStudentsMap[studentKey];
-            if (!student) return;
-
-            const initials = student.name.split(' ').map(n => n[0]).slice(0, 2).join('');
-            document.getElementById('modal-avatar').textContent = initials;
-            document.getElementById('modal-name').textContent = student.name;
-            document.getElementById('modal-subtext').textContent = `No. Peserta: ${student.id} | Total Keikutsertaan: ${student.totalTOs} Tryout`;
-
-            // Trend Badge in Header
-            const trendBadgeHTML = getTrendBadgeHTML(student.trend, student.deltaAvg);
-            document.getElementById('modal-trend-badge').innerHTML = trendBadgeHTML;
-
-            // Printable header elements
-            document.getElementById('print-name').textContent = student.name;
-            document.getElementById('print-id').textContent = student.id;
-            document.getElementById('print-trend').textContent = `${student.trend} (${student.deltaAvg >= 0 ? '+' : ''}${student.deltaAvg} pt)`;
-            document.getElementById('print-to-count').textContent = `${student.totalTOs} Tryout`;
-
-            // Tab 1: Accumulation Data
-            document.getElementById('acc-overall-avg').textContent = student.overallAccumulatedAvg;
-            document.getElementById('acc-highest-score').textContent = student.highestTotalScore;
-            document.getElementById('acc-latest-rank').textContent = `#${student.latestData.rank}`;
-            
-            const deltaElem = document.getElementById('acc-delta-score');
-            if (student.deltaAvg >= 0) {
-                deltaElem.textContent = `+${student.deltaAvg} pt`;
-                deltaElem.className = "text-base font-bold text-emerald-600";
-            } else {
-                deltaElem.textContent = `${student.deltaAvg} pt`;
-                deltaElem.className = "text-base font-bold text-rose-600";
-            }
-
-            renderStudentTrendChart(student);
-            renderMatrixTable(student);
-            renderLongitudinalInsights(student);
-
-            // Populate Tab 2 Tryout Selector
-            const toSelector = document.getElementById('single-to-selector');
-            toSelector.innerHTML = student.history.map(h => `
-                <option value="${h.toId}">${h.toTitle} (Nilai: ${h.data.avg})</option>
-            `).join('');
-
-            renderSingleTryoutView();
-
-            // Default to Accumulation Tab
-            switchTab('accumulation');
-
-            document.getElementById('student-modal').classList.remove('hidden');
-            lucide.createIcons();
-        }
-
-        function switchTab(tabName) {
-            const accBtn = document.getElementById('tab-btn-accumulation');
-            const singleBtn = document.getElementById('tab-btn-single');
-            const accContent = document.getElementById('tab-accumulation-content');
-            const singleContent = document.getElementById('tab-single-content');
-
-            if (tabName === 'accumulation') {
-                accBtn.className = "py-3 text-xs font-bold border-b-2 border-brand-600 text-brand-600 flex items-center gap-1.5";
-                singleBtn.className = "py-3 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5";
-                accContent.classList.remove('hidden');
-                singleContent.classList.add('hidden');
-            } else {
-                singleBtn.className = "py-3 text-xs font-bold border-b-2 border-brand-600 text-brand-600 flex items-center gap-1.5";
-                accBtn.className = "py-3 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5";
-                singleContent.classList.remove('hidden');
-                accContent.classList.add('hidden');
-            }
-        }
-
-        function renderStudentTrendChart(student) {
-            const ctx = document.getElementById('studentTrendChart').getContext('2d');
-            if (studentTrendChartInstance) studentTrendChartInstance.destroy();
-
-            const labels = student.history.map(h => h.toTitle);
-            const dataPoints = student.history.map(h => h.data.avg);
-
-            studentTrendChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Nilai Rata-Rata',
-                        data: dataPoints,
-                        borderColor: '#0284c7',
-                        backgroundColor: 'rgba(2, 132, 199, 0.15)',
-                        fill: true,
-                        tension: 0.2,
-                        pointRadius: 6,
-                        pointHoverRadius: 8,
-                        pointBackgroundColor: '#0284c7'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { min: 0, max: 100, grid: { color: '#f1f5f9' } },
-                        x: { grid: { display: false } }
-                    },
-                    plugins: { legend: { display: false } }
+                if (existingStudent) {
+                    if (!existingStudent.toData) existingStudent.toData = {};
+                    existingStudent.toData[session] = { ina, eng, mat, mp1, mp2, rata2 };
+                } else {
+                    let newStudent = {
+                        id: noPeserta,
+                        nama: nama,
+                        kelas: kelas,
+                        noPeserta: noPeserta,
+                        toData: {}
+                    };
+                    newStudent.toData[session] = { ina, eng, mat, mp1, mp2, rata2 };
+                    masterStudentsData.push(newStudent);
                 }
             });
         }
 
-        function renderMatrixTable(student) {
-            const tbody = document.getElementById('matrix-table-body');
-            const first = student.firstData;
-            const latest = student.latestData;
+        /* FITUR KELOLA TRYOUT & REFRESH */
+        function openManageTOModal() {
+            const container = document.getElementById('manage-to-list');
+            container.innerHTML = '';
 
-            tbody.innerHTML = subjects.map(sub => {
-                const firstVal = first[sub.key] || 0;
-                const latestVal = latest[sub.key] || 0;
-                const accVal = student.subjectAverages[sub.key];
-                const delta = Number((latestVal - firstVal).toFixed(1));
+            if (toKeys.length === 0) {
+                container.innerHTML = `<p class="text-slate-400 p-2 italic text-center">Belum ada sesi Tryout terdaftar.</p>`;
+            } else {
+                toKeys.forEach(to => {
+                    let count = masterStudentsData.filter(s => s.toData && s.toData[to]).length;
+                    let div = document.createElement('div');
+                    div.className = "flex items-center justify-between py-2 px-1";
+                    div.innerHTML = `
+                        <div>
+                            <span class="font-bold text-slate-800">${to}</span>
+                            <span class="text-[11px] text-slate-500 block">${count} Siswa Terdata</span>
+                        </div>
+                        <button onclick="deleteTOSession('${to}')" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded text-[11px] font-bold border border-rose-200 transition flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i>
+                            <span>Hapus Sesi</span>
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            }
 
-                let deltaHTML = `<span class="text-slate-500 font-semibold">0</span>`;
-                if (delta > 0) deltaHTML = `<span class="text-emerald-600 font-bold">+${delta}</span>`;
-                else if (delta < 0) deltaHTML = `<span class="text-rose-600 font-bold">${delta}</span>`;
-
-                return `
-                    <tr>
-                        <td class="p-2 font-medium text-slate-800">${sub.name}</td>
-                        <td class="p-2 text-center text-slate-600">${firstVal}</td>
-                        <td class="p-2 text-center font-bold text-slate-900">${latestVal}</td>
-                        <td class="p-2 text-center text-brand-700 font-semibold">${accVal}</td>
-                        <td class="p-2 text-center">${deltaHTML}</td>
-                    </tr>
-                `;
-            }).join('');
+            document.getElementById('manage-to-modal').classList.remove('hidden');
+            lucide.createIcons();
         }
 
-        function renderLongitudinalInsights(student) {
-            // Find fastest growing & lagging subjects
-            const subDeltas = subjects.map(sub => {
-                const firstVal = student.firstData[sub.key] || 0;
-                const latestVal = student.latestData[sub.key] || 0;
-                return {
-                    name: sub.name,
-                    delta: latestVal - firstVal,
-                    accAvg: student.subjectAverages[sub.key]
-                };
-            });
+        function closeManageTOModal() {
+            document.getElementById('manage-to-modal').classList.add('hidden');
+        }
 
-            subDeltas.sort((a, b) => b.delta - a.delta);
-
-            const topGrowth = subDeltas.slice(0, 2);
-            const needsFocus = subDeltas.slice(-2).reverse();
-
-            document.getElementById('acc-strengths').innerHTML = topGrowth.map(g => `
-                <li><b>${g.name}</b>: Pertumbuhan ${g.delta >= 0 ? '+' : ''}${g.delta} poin (Rata2 Akumulasi: ${g.accAvg}).</li>
-            `).join('');
-
-            document.getElementById('acc-weaknesses').innerHTML = needsFocus.map(f => `
-                <li><b>${f.name}</b>: Perubahan ${f.delta >= 0 ? '+' : ''}${f.delta} poin (Rata2 Akumulasi: ${f.accAvg}).</li>
-            `).join('');
-
-            const recContainer = document.getElementById('acc-recommendation');
-            if (student.trend === 'UP') {
-                recContainer.innerHTML = `
-                    <p>• <b>Tren Progresif Positif:</b> Siswa menunjukkan tren konsisten meningkat (+${student.deltaAvg} pt). Pertahankan ritme belajar saat ini dan tingkatkan fokus pada latihan soal tipe HOTS untuk ${needsFocus[0].name}.</p>
-                `;
-            } else if (student.trend === 'DOWN') {
-                recContainer.innerHTML = `
-                    <p>• <b>Peringatan Penurunan Performa:</b> Terjadi penurunan nilai (${student.deltaAvg} pt) pada tryout terbaru. Disarankan melakukan *evaluasi pemahaman konsep dasar* khusus pada subtes ${needsFocus[0].name} dan ${needsFocus[1].name}.</p>
-                `;
-            } else {
-                recContainer.innerHTML = `
-                    <p>• <b>Performa Stabil:</b> Hasil tryout relatif stabil. Untuk menaikkan ke tingkat berikutnya, berikan target khusus pada subtes dengan nilai akumulasi terendah.</p>
-                `;
+        function deleteTOSession(sessionName) {
+            if (confirm(`Apakah Anda yakin ingin menghapus data ${sessionName} dari seluruh siswa?`)) {
+                masterStudentsData.forEach(s => {
+                    if (s.toData && s.toData[sessionName]) {
+                        delete s.toData[sessionName];
+                    }
+                });
+                initDatabase();
+                openManageTOModal();
             }
         }
 
-        function renderSingleTryoutView() {
-            const selectedToId = document.getElementById('single-to-selector').value;
-            const studentKey = Object.keys(accumulatedStudentsMap).find(k => String(accumulatedStudentsMap[k].id) === String(currentSelectedStudentId));
-            const student = accumulatedStudentsMap[studentKey];
-            if (!student) return;
+        function resetToDefaultData() {
+            if (confirm("Reset seluruh data kembali ke data standar pabrik? Data upload kustom akan hilang.")) {
+                masterStudentsData = JSON.parse(JSON.stringify(initialStudentsData));
+                initDatabase();
+                closeManageTOModal();
+            }
+        }
 
-            const entry = student.history.find(h => h.toId === selectedToId) || student.history[student.history.length - 1];
-            const studentData = entry.data;
+        function refreshData() {
+            initDatabase();
+            alert("Data berhasil diperbarui!");
+        }
 
-            // Find class averages for this specific tryout
-            const targetTO = allTryouts.find(t => t.id === selectedToId);
-            const classAvgMap = {};
-            subjects.forEach(sub => {
-                const sum = targetTO.students.reduce((acc, curr) => acc + (Number(curr[sub.key]) || 0), 0);
-                classAvgMap[sub.key] = Number((sum / targetTO.students.length).toFixed(1));
+        function renderOverallFluctuationChart() {
+            let dataPerTO = toKeys.map(to => {
+                let tinggi = 0, menengah = 0, penguatan = 0;
+                masterStudentsData.forEach(s => {
+                    if (s.toData && s.toData[to] && s.toData[to].rata2 !== undefined) {
+                        let val = s.toData[to].rata2;
+                        if (val >= 6.0) tinggi++;
+                        else if (val >= 5.0) menengah++;
+                        else penguatan++;
+                    }
+                });
+                return { to, tinggi, menengah, penguatan };
             });
 
-            // Render Radar Chart
-            const ctx = document.getElementById('singleRadarChart').getContext('2d');
-            if (singleRadarChartInstance) singleRadarChartInstance.destroy();
+            const ctx = document.getElementById('overallCategoryFluctuationChart').getContext('2d');
+            if (overallFluctuationChartInstance) overallFluctuationChartInstance.destroy();
 
-            singleRadarChartInstance = new Chart(ctx, {
-                type: 'radar',
+            overallFluctuationChartInstance = new Chart(ctx, {
+                type: 'line',
                 data: {
-                    labels: subjects.map(s => s.name),
+                    labels: toKeys,
                     datasets: [
                         {
-                            label: student.name.split(' ')[0],
-                            data: subjects.map(s => studentData[s.key]),
-                            backgroundColor: 'rgba(2, 132, 199, 0.25)',
-                            borderColor: '#0284c7',
-                            borderWidth: 2
+                            label: 'Kelompok Tinggi (≥6.0)',
+                            data: dataPerTO.map(d => d.tinggi),
+                            borderColor: '#d97706',
+                            backgroundColor: '#fef3c7',
+                            tension: 0.3,
+                            fill: false,
+                            borderWidth: 2,
+                            pointRadius: 4
                         },
                         {
-                            label: 'Rata-Rata Kelas',
-                            data: subjects.map(s => classAvgMap[s.key]),
-                            backgroundColor: 'rgba(148, 163, 184, 0.2)',
-                            borderColor: '#94a3b8',
-                            borderDash: [4, 4],
-                            borderWidth: 1.5
+                            label: 'Kelompok Menengah (5.0-5.9)',
+                            data: dataPerTO.map(d => d.menengah),
+                            borderColor: '#2563eb',
+                            backgroundColor: '#dbeafe',
+                            tension: 0.3,
+                            fill: false,
+                            borderWidth: 2,
+                            pointRadius: 4
+                        },
+                        {
+                            label: 'Kelompok Perlu Penguatan (<5.0)',
+                            data: dataPerTO.map(d => d.penguatan),
+                            borderColor: '#e11d48',
+                            backgroundColor: '#ffe4e6',
+                            tension: 0.3,
+                            fill: false,
+                            borderWidth: 2,
+                            pointRadius: 4
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: { r: { suggestedMin: 0, suggestedMax: 100, ticks: { display: false } } },
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } }
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } },
+                        x: { ticks: { font: { size: 10 } } }
+                    }
                 }
             });
+        }
 
-            // Breakdown progress bars
-            document.getElementById('single-subject-breakdown').innerHTML = subjects.map(sub => {
-                const score = studentData[sub.key];
-                const avg = classAvgMap[sub.key];
-                return `
-                    <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="font-medium text-slate-700">${sub.name}</span>
-                            <span class="font-bold text-slate-900">${score} <span class="text-slate-400 font-normal">(Avg: ${avg})</span></span>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                            <div class="bg-brand-500 h-2 rounded-full" style="width: ${Math.min(score, 100)}%"></div>
-                        </div>
+        function renderAttendanceSummary() {
+            const container = document.getElementById('attendance-summary-list');
+            container.innerHTML = '';
+
+            toKeys.forEach(to => {
+                let totalSiswa = masterStudentsData.length;
+                let hadir = masterStudentsData.filter(s => s.toData && s.toData[to] && s.toData[to].rata2 !== undefined).length;
+                let absen = totalSiswa - hadir;
+                let pct = totalSiswa > 0 ? ((hadir / totalSiswa) * 100).toFixed(0) : 0;
+
+                let div = document.createElement('div');
+                div.className = 'py-1.5 flex items-center justify-between text-xs';
+                div.innerHTML = `
+                    <span class="font-bold text-slate-700">${to}</span>
+                    <div class="flex items-center gap-3">
+                        <span class="text-emerald-700 font-medium">Hadir: <b>${hadir}</b> (${pct}%)</span>
+                        <span class="text-rose-600 font-medium">Absen: <b>${absen}</b></span>
                     </div>
                 `;
-            }).join('');
+                container.appendChild(div);
+            });
         }
 
-        function openUploadModal() {
-            document.getElementById('upload-modal').classList.remove('hidden');
+        function applyFilters() {
+            let search = document.getElementById('search-input').value.toLowerCase().trim();
+            let kelas = document.getElementById('filter-kelas').value;
+            let trend = document.getElementById('filter-trend').value;
+            let category = document.getElementById('filter-category').value;
+            let sort = document.getElementById('sort-performance').value;
+
+            let filtered = masterStudentsData.filter(s => {
+                let matchSearch = s.nama.toLowerCase().includes(search) || s.noPeserta.toLowerCase().includes(search);
+                let matchKelas = (kelas === 'ALL') || (s.kelas === kelas);
+                let matchTrend = (trend === 'ALL') || (s.trend === trend);
+                let matchCat = (category === 'ALL') || (s.category === category);
+
+                return matchSearch && matchKelas && matchTrend && matchCat;
+            });
+
+            // Sorting
+            if (sort === 'avg-desc') {
+                filtered.sort((a, b) => b.overallAvg - a.overallAvg);
+            } else if (sort === 'avg-asc') {
+                filtered.sort((a, b) => a.overallAvg - b.overallAvg);
+            } else if (sort === 'delta-desc') {
+                filtered.sort((a, b) => b.delta - a.delta);
+            } else if (sort === 'name-asc') {
+                filtered.sort((a, b) => a.nama.localeCompare(b.nama));
+            }
+
+            document.getElementById('showing-count').innerText = `Menampilkan ${filtered.length} Siswa`;
+            renderStudentCards(filtered);
         }
 
-        function closeUploadModal() {
-            document.getElementById('upload-modal').classList.add('hidden');
-        }
+        function renderStudentCards(students) {
+            const container = document.getElementById('student-list-container');
+            container.innerHTML = '';
 
-        function handleFileUpload(event) {
-            event.preventDefault();
-            const titleInput = document.getElementById('upload-to-name').value;
-            const fileInput = document.getElementById('upload-to-file').files[0];
-
-            if (!fileInput) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                    if (json.length < 2) {
-                        alert('File Excel tidak valid atau kosong.');
-                        return;
-                    }
-
-                    const parsedStudents = [];
-                    for (let i = 1; i < json.length; i++) {
-                        const row = json[i];
-                        if (!row[1] && !row[2]) continue;
-
-                        parsedStudents.push({
-                            no: Number(row[0]) || i,
-                            id: String(row[1] || `2601${i.toString().padStart(3, '0')}`),
-                            name: String(row[2] || 'Siswa Tanpa Nama').trim(),
-                            ina: Number(row[3]) || 0,
-                            eng: Number(row[4]) || 0,
-                            mat: Number(row[5]) || 0,
-                            matlan: Number(row[6]) || 0,
-                            fis: Number(row[7]) || 0,
-                            bio: Number(row[8]) || 0,
-                            kim: Number(row[9]) || 0,
-                            total: Number(row[10]) || 0,
-                            avg: Number(row[11]) || 0,
-                            rank: Number(row[12]) || i
-                        });
-                    }
-
-                    const newToId = `TO-${allTryouts.length + 1}`;
-                    allTryouts.push({
-                        id: newToId,
-                        title: titleInput,
-                        students: parsedStudents
-                    });
-
-                    saveTryoutsToStorage();
-                    processAccumulatedData();
-                    renderDashboard();
-
-                    closeUploadModal();
-                    alert(`Berhasil menambahkan ${titleInput} dengan ${parsedStudents.length} siswa!`);
-
-                } catch (err) {
-                    console.error(err);
-                    alert('Gagal memproses file Excel.');
-                }
-            };
-            reader.readAsArrayBuffer(fileInput);
-        }
-
-        function openManageTryoutsModal() {
-            const container = document.getElementById('tryout-list-container');
-            container.innerHTML = allTryouts.map((to, index) => `
-                <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-900">${to.title}</h4>
-                        <p class="text-[11px] text-slate-500">${to.students.length} Siswa Terdaftar</p>
+            if (students.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-slate-400 text-xs font-medium">
+                        Tidak ada data siswa yang cocok dengan filter.
                     </div>
-                    ${index > 0 ? `
-                        <button onclick="deleteTryout(${index})" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-semibold">
-                            Hapus
+                `;
+                return;
+            }
+
+            students.forEach(s => {
+                let badgeCatClass = s.category === "Kelompok Tinggi" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                    s.category === "Kelompok Menengah" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                                    "bg-rose-50 text-rose-700 border-rose-200";
+
+                let trendIcon = s.trend === "UP" ? "↗" : s.trend === "DOWN" ? "↘" : "→";
+                let trendBadge = s.trend === "UP" ? "text-emerald-600 bg-emerald-50 border-emerald-200" :
+                                 s.trend === "DOWN" ? "text-rose-600 bg-rose-50 border-rose-200" :
+                                 "text-slate-600 bg-slate-50 border-slate-200";
+
+                let card = document.createElement('div');
+                card.className = "p-4 hover:bg-slate-50/80 transition flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer";
+                card.onclick = () => openStudentModal(s.id);
+
+                let toPills = toKeys.map(to => {
+                    let val = (s.toData && s.toData[to]) ? s.toData[to].rata2 : null;
+                    let text = val !== null && val !== undefined ? val.toFixed(2) : "—";
+                    return `<span class="px-2 py-0.5 text-[11px] font-semibold bg-slate-100 rounded border border-slate-200 text-slate-700">${to}: <b>${text}</b></span>`;
+                }).join(" ");
+
+                card.innerHTML = `
+                    <div class="space-y-1.5 flex-grow">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-bold text-slate-400">#${s.noPeserta}</span>
+                            <h4 class="text-sm font-extrabold text-slate-900 hover:text-brand-600">${s.nama}</h4>
+                            <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">${s.kelas}</span>
+                            <span class="text-xs font-bold px-2 py-0.5 rounded border ${badgeCatClass}">${s.category}</span>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap pt-0.5">
+                            ${toPills}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between md:justify-end gap-4 shrink-0 border-t md:border-t-0 pt-2 md:pt-0 border-slate-100">
+                        <div class="text-left md:text-right">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Rerata Nilai</span>
+                            <span class="text-base font-black text-brand-700">${s.overallAvg.toFixed(2)}</span>
+                        </div>
+                        <div class="text-left md:text-right">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Tren</span>
+                            <span class="text-xs font-extrabold px-2 py-0.5 rounded border ${trendBadge}">${trendIcon} ${s.delta >= 0 ? '+' : ''}${s.delta.toFixed(2)}</span>
+                        </div>
+                        <button class="px-3 py-1.5 bg-brand-50 text-brand-700 hover:bg-brand-600 hover:text-white rounded-lg text-xs font-bold transition flex items-center gap-1 border border-brand-200">
+                            <span>Detail</span>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                         </button>
-                    ` : `<span class="text-[10px] font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded">Baseline</span>`}
-                </div>
-            `).join('');
+                    </div>
+                `;
+                container.appendChild(card);
+            });
 
-            document.getElementById('manage-modal').classList.remove('hidden');
+            lucide.createIcons();
         }
 
-        function closeManageModal() {
-            document.getElementById('manage-modal').classList.add('hidden');
-        }
+        function openStudentModal(id) {
+            const student = masterStudentsData.find(s => s.id === id);
+            if (!student) return;
 
-        function deleteTryout(index) {
-            if (confirm(`Hapus seri ${allTryouts[index].title}?`)) {
-                allTryouts.splice(index, 1);
-                saveTryoutsToStorage();
-                processAccumulatedData();
-                renderDashboard();
-                openManageTryoutsModal();
-            }
-        }
+            // Basic Info
+            document.getElementById('rep-nama').innerText = student.nama;
+            document.getElementById('rep-kelas').innerText = student.kelas;
+            document.getElementById('rep-nopeserta').innerText = student.noPeserta;
 
-        function resetDataToDefault() {
-            if (confirm('Kembalikan sistem ke data awal built-in?')) {
-                localStorage.removeItem('TRYOUT_SAINTEK_MULTI_DATA_V1');
-                allTryouts = JSON.parse(JSON.stringify(initialTryoutsData));
-                saveTryoutsToStorage();
-                processAccumulatedData();
-                renderDashboard();
-            }
+            let totalParticipated = toKeys.filter(to => student.toData && student.toData[to] && student.toData[to].rata2 !== undefined).length;
+            document.getElementById('rep-partisipasi').innerText = `${totalParticipated} dari ${toKeys.length} Ujian Tryout`;
+
+            // Box 1
+            const categoryBadge = document.getElementById('rep-box1-category');
+            categoryBadge.innerText = student.category;
+            categoryBadge.className = student.category === "Kelompok Tinggi" ? "px-3 py-0.5 rounded-full text-xs font-black border bg-amber-50 text-amber-700 border-amber-200" :
+                                      student.category === "Kelompok Menengah" ? "px-3 py-0.5 rounded-full text-xs font-black border bg-blue-50 text-blue-700 border-blue-200" :
+                                      "px-3 py-0.5 rounded-full text-xs font-black border bg-rose-50 text-rose-700 border-rose-200";
+
+            document.getElementById('rep-avg-siswa').innerText = student.overallAvg.toFixed(2);
+            document.getElementById('rep-avg-angkatan').innerText = angkatanOverallAvg.toFixed(2);
+
+            let diff = student.overallAvg - angkatanOverallAvg;
+            let relativePos = diff > 0.3 ? "Di Atas Rerata Angkatan (+)" :
+                              diff < -0.3 ? "Di Bawah Rerata Angkatan (-)" :
+                              "Mendekati Rerata Angkatan (±)";
+            document.getElementById('rep-posisi-relatif').innerText = relativePos;
+
+            let expText = `Siswa saat ini berada pada <b>${student.category}</b> dengan nilai rerata akumulasi <b>${student.overallAvg.toFixed(2)}</b>. `;
+            if (diff > 0) expText += `Pencapaian ini berada <b>+${diff.toFixed(2)} poin di atas</b> rata-rata angkatan (${angkatanOverallAvg.toFixed(2)}). Menunjukkan konsistensi akademik yang sangat baik.`;
+            else expText += `Pencapaian ini berada <b>${diff.toFixed(2)} poin di bawah</b> rata-rata angkatan (${angkatanOverallAvg.toFixed(2)}). Diperlukan fokus pendampingan pada subtes yang belum optimal.`;
+            document.getElementById('rep-box1-explanation').innerHTML = expText;
+
+            // Box 2 - Chart
+            renderIndividualChart(student);
+
+            // Box 3 - Table Subtest Profile DI SETIAP TRYOUT & POSISI RELATIF PER MAPEL
+            renderBox3TablePerTO(student);
+
+            // Box 4 - Parents Report
+            renderBox4Parents(student);
+
+            // Box 5 - Action Plan
+            renderBox5ActionPlan(student);
+
+            // Box 6 - Rekomendasi Perkuliahan & Strategi Belajar
+            renderBox6Recommendations(student);
+
+            document.getElementById('student-modal').classList.remove('hidden');
+            lucide.createIcons();
         }
 
         function closeModal() {
             document.getElementById('student-modal').classList.add('hidden');
+        }
+
+        function renderIndividualChart(student) {
+            const ctx = document.getElementById('studentIndividualChart').getContext('2d');
+            if (individualChartInstance) individualChartInstance.destroy();
+
+            let studentData = toKeys.map(to => (student.toData && student.toData[to]) ? student.toData[to].rata2 : null);
+            let angkatanData = toKeys.map(to => {
+                let sum = 0, count = 0;
+                masterStudentsData.forEach(s => {
+                    if (s.toData && s.toData[to] && s.toData[to].rata2 !== undefined) {
+                        sum += safeParseFloat(s.toData[to].rata2);
+                        count++;
+                    }
+                });
+                return count > 0 ? (sum / count) : 0;
+            });
+
+            individualChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: toKeys,
+                    datasets: [
+                        {
+                            label: 'Nilai Rerata Siswa',
+                            data: studentData,
+                            borderColor: '#0284c7',
+                            backgroundColor: '#0284c7',
+                            tension: 0.2,
+                            borderWidth: 3,
+                            pointRadius: 5
+                        },
+                        {
+                            label: 'Rerata Angkatan',
+                            data: angkatanData,
+                            borderColor: '#94a3b8',
+                            backgroundColor: '#94a3b8',
+                            borderDash: [5, 5],
+                            tension: 0.2,
+                            borderWidth: 2,
+                            pointRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }
+                    },
+                    scales: {
+                        y: { min: 0, max: 10, ticks: { stepSize: 2, font: { size: 10 } } },
+                        x: { ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        /* BOX NO 3: PENAMBAHAN KOLOM "POSISI RELATIF" (RERATA MAPEL SISWA VS RERATA MAPEL SELURUH SISWA) */
+        function renderBox3TablePerTO(student) {
+            const thead = document.getElementById('rep-box3-thead');
+            const tbody = document.getElementById('rep-box3-table');
+
+            // Header Tabel (Judul Kolom Diganti Menjadi Posisi Relatif)
+            let headerHTML = `<th class="p-2 border-r border-slate-200">Mata Pelajaran / Subtes</th>`;
+            toKeys.forEach(to => {
+                headerHTML += `<th class="p-2 text-center border-r border-slate-200 min-w-[60px]">${to}</th>`;
+            });
+            headerHTML += `<th class="p-2 text-center border-r border-slate-200 bg-slate-200/60 font-black min-w-[70px]">Rerata Siswa</th>`;
+            headerHTML += `<th class="p-2 text-center bg-slate-200/80 font-black min-w-[150px]">Posisi Relatif</th>`;
+            thead.innerHTML = headerHTML;
+
+            tbody.innerHTML = '';
+
+            subtestKeys.forEach(st => {
+                let rowSum = 0;
+                let rowCount = 0;
+
+                let tr = document.createElement('tr');
+                let tdName = `<td class="p-2 font-bold text-slate-800 border-r border-slate-200">${subtestNames[st]}</td>`;
+                
+                let tdScores = '';
+                toKeys.forEach(to => {
+                    let score = (student.toData && student.toData[to] && student.toData[to][st] !== undefined) ? safeParseFloat(student.toData[to][st]) : null;
+                    if (score !== null) {
+                        rowSum += score;
+                        rowCount++;
+                        let badgeColor = score >= 7.5 ? 'text-emerald-700 font-bold' : score < 5.0 ? 'text-rose-600 font-bold' : 'text-slate-700';
+                        tdScores += `<td class="p-2 text-center border-r border-slate-200 ${badgeColor}">${score.toFixed(2)}</td>`;
+                    } else {
+                        tdScores += `<td class="p-2 text-center border-r border-slate-200 text-slate-300">—</td>`;
+                    }
+                });
+
+                let rowAvg = rowCount > 0 ? (rowSum / rowCount) : 0;
+                let avgBadge = rowAvg >= 6.0 ? 'text-brand-700 font-black' : 'text-amber-700 font-bold';
+                
+                // Perbandingan Rerata Mapel Siswa vs Rerata Mapel Seluruh Siswa
+                let angkatanAvgMapel = angkatanSubtestAvg[st] ? angkatanSubtestAvg[st].avg : 0;
+                let diffMapel = rowAvg - angkatanAvgMapel;
+
+                let catLabel = "";
+                let catBadgeClass = "";
+
+                if (diffMapel >= 1.0) {
+                    catLabel = "Sangat Unggul";
+                    catBadgeClass = "bg-emerald-100 text-emerald-800 border-emerald-300";
+                } else if (diffMapel >= 0.2) {
+                    catLabel = "Di Atas Rata-Rata";
+                    catBadgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+                } else if (diffMapel >= -0.19) {
+                    catLabel = "Sama dengan Rata-Rata";
+                    catBadgeClass = "bg-slate-100 text-slate-700 border-slate-200";
+                } else {
+                    catLabel = "Perlu Penguatan";
+                    catBadgeClass = "bg-rose-50 text-rose-700 border-rose-200";
+                }
+
+                let tdCat = `
+                    <td class="p-2 text-center">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-black border ${catBadgeClass}">
+                            ${catLabel} (${diffMapel >= 0 ? '+' : ''}${diffMapel.toFixed(2)})
+                        </span>
+                    </td>
+                `;
+
+                tr.innerHTML = tdName + tdScores + `<td class="p-2 text-center border-r border-slate-200 bg-slate-50 font-black ${avgBadge}">${rowAvg.toFixed(2)}</td>` + tdCat;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderBox4Parents(student) {
+            let validTOs = toKeys.filter(to => student.toData && student.toData[to] && student.toData[to].rata2 !== undefined);
+            let latestTO = validTOs.length > 0 ? validTOs[validTOs.length - 1] : null;
+            let latestScore = latestTO ? safeParseFloat(student.toData[latestTO].rata2) : 0;
+
+            document.getElementById('rep-box4-latest-status').innerHTML = 
+                `Pada <b>${latestTO || 'TO Terbaru'}</b>, Ananda memperoleh nilai <b>${latestScore.toFixed(2)}</b>. ` +
+                (student.delta > 0 ? "Menunjukkan grafik peningkatan positif dibanding ujian awal." : "Cenderung stabil dan siap ditingkatkan pada TO berikutnya.");
+
+            let goodCount = 0;
+            validTOs.forEach(to => { if (safeParseFloat(student.toData[to].rata2) >= 6.0) goodCount++; });
+            let goodPct = validTOs.length > 0 ? ((goodCount / validTOs.length) * 100).toFixed(0) : 0;
+
+            document.getElementById('rep-box4-percentage').innerHTML = 
+                `Ananda mencapai nilai optimal (&ge;6.0) pada <b>${goodCount} dari ${validTOs.length} ujian (${goodPct}%)</b>.`;
+
+            let subAvgs = subtestKeys.map(st => {
+                let sum = 0, c = 0;
+                toKeys.forEach(to => {
+                    if (student.toData && student.toData[to] && student.toData[to][st] !== undefined) {
+                        sum += safeParseFloat(student.toData[to][st]);
+                        c++;
+                    }
+                });
+                return { key: st, name: subtestNames[st], avg: c > 0 ? (sum / c) : 0 };
+            }).sort((a, b) => b.avg - a.avg);
+
+            let best = subAvgs.slice(0, 2).map(s => `<b>${s.name}</b> (${s.avg.toFixed(2)})`).join(" & ");
+            let worst = subAvgs.slice(-2).map(s => `<b>${s.name}</b> (${s.avg.toFixed(2)})`).join(" & ");
+
+            document.getElementById('rep-box4-prominent').innerHTML = `Ananda sangat menonjol di bidang ${best}.`;
+            document.getElementById('rep-box4-development').innerHTML = `Bidang yang perlu perhatian lebih lanjut adalah ${worst}.`;
+
+            document.getElementById('rep-box4-home-support').innerHTML = 
+                `1. Memberikan motivasi belajar rutin dan tempat belajar yang kondusif di rumah.<br>` +
+                `2. Mengingatkan Ananda untuk melakukan latihan soal secara konsisten pada mata pelajaran <b>${subAvgs[subAvgs.length - 1].name}</b>.<br>` +
+                `3. Menjaga keseimbangan jam istirahat dan pola makan harian menjelang pelaksanaan Tryout selanjutnya.`;
+        }
+
+        function renderBox5ActionPlan(student) {
+            const container = document.getElementById('rep-box5-table');
+            container.innerHTML = '';
+
+            let subAvgs = subtestKeys.map(st => {
+                let sum = 0, c = 0;
+                toKeys.forEach(to => {
+                    if (student.toData && student.toData[to] && student.toData[to][st] !== undefined) {
+                        sum += safeParseFloat(student.toData[to][st]);
+                        c++;
+                    }
+                });
+                return { key: st, name: subtestNames[st], avg: c > 0 ? (sum / c) : 0 };
+            }).sort((a, b) => b.avg - a.avg);
+
+            let unggulMapel = subAvgs[0];
+            let penguatanMapel = subAvgs[subAvgs.length - 1];
+
+            let plans = [
+                {
+                    kategori: `Mapel Unggul (${unggulMapel.name})`,
+                    kondisi: `Sangat Baik (Rerata: ${unggulMapel.avg.toFixed(2)})`,
+                    tujuan: "Mempertahankan skor maksimal & menjadi modal kelulusan SNBP/SNBT",
+                    strategi: "Pengayaan soal HOTS tingkat lanjut & tutor sebaya",
+                    indikator: "Nilai tetap stabil ≥ 8.00 pada TO selanjutnya"
+                },
+                {
+                    kategori: `Mapel Perlu Penguatan (${penguatanMapel.name})`,
+                    kondisi: `Belum Optimal (Rerata: ${penguatanMapel.avg.toFixed(2)})`,
+                    tujuan: "Meningkatkan skor di atas batas rata-rata kelulusan",
+                    strategi: "Klinik remedial khusus, pendampingan modul dasar & drill soal",
+                    indikator: "Peningkatan nilai min. +1.00 pada TO berikutnya"
+                }
+            ];
+
+            plans.forEach(p => {
+                let isUnggul = p.kategori.includes("Unggul");
+                let badgeClass = isUnggul ? "text-emerald-800 bg-emerald-50 border-emerald-200" : "text-amber-800 bg-amber-50 border-amber-200";
+
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-2 border-r border-slate-200 font-extrabold ${badgeClass}">${p.kategori}</td>
+                    <td class="p-2 border-r border-slate-200 text-slate-700">${p.kondisi}</td>
+                    <td class="p-2 border-r border-slate-200 font-semibold text-brand-700">${p.tujuan}</td>
+                    <td class="p-2 border-r border-slate-200 text-slate-700">${p.strategi}</td>
+                    <td class="p-2 text-slate-700 font-medium">${p.indikator}</td>
+                `;
+                container.appendChild(tr);
+            });
+        }
+
+        function renderBox6Recommendations(student) {
+            const majorsContainer = document.getElementById('rep-box6-majors');
+            const strategyContainer = document.getElementById('rep-box6-strategy');
+
+            let subAvgs = subtestKeys.map(st => {
+                let sum = 0, c = 0;
+                toKeys.forEach(to => {
+                    if (student.toData && student.toData[to] && student.toData[to][st] !== undefined) {
+                        sum += safeParseFloat(student.toData[to][st]);
+                        c++;
+                    }
+                });
+                return { key: st, name: subtestNames[st], avg: c > 0 ? (sum / c) : 0 };
+            }).sort((a, b) => b.avg - a.avg);
+
+            let top1 = subAvgs[0];
+            let top2 = subAvgs[1];
+            let avgAll = student.overallAvg;
+
+            let recs = [];
+            let strategies = [];
+
+            if (top1.key === 'mat' || top2.key === 'mat') {
+                recs.push("Teknik Informatika / Data Science (Sains Data)", "Teknik Sipil / Teknik Elektro", "Aktuaria / Statistika");
+            }
+            if (top1.key === 'eng' || top2.key === 'eng') {
+                recs.push("Hubungan Internasional", "Sastra Inggris / Komunikasi", "Bisnis Internasional / Manajemen");
+            }
+            if (top1.key === 'ina' || top2.key === 'ina') {
+                recs.push("Ilmu Hukum", "Ilmu Komunikasi / Jurnalistik", "Psikologi / Pendidikan");
+            }
+            if (top1.key === 'mp1' || top2.key === 'mp1' || top1.key === 'mp2' || top2.key === 'mp2') {
+                recs.push("Kedokteran / Farmasi (Saintek)", "Manajemen / Akuntansi (Soshum)", "Arsitektur / Desain");
+            }
+
+            recs = [...new Set(recs)].slice(0, 3);
+
+            if (avgAll >= 6.5) {
+                strategies.push("<b>Fokus Pengayaan HOTS:</b> Pertahankan performa dengan rutin berlatih soal tingkat kesulitan tinggi (HOTS) serta simulasi waktu ketat.");
+                strategies.push("<b>Target PTN Cluster 1:</b> Optimalkan pembobotan nilai SNBT pada mata pelajaran unggulan untuk mengamankan pilihan jurusan utama.");
+            } else if (avgAll >= 5.0) {
+                strategies.push("<b>Peningkatan Konsistensi:</b> Fokus menaikkan nilai pada mapel yang masih di bawah rata-rata angkatan melalui evaluasi konsep dasar.");
+                strategies.push("<b>Strategi Eliminasi Jawaban:</b> Latih teknik pengerjaan soal dengan mengeliminasi opsi salah untuk memaksimalkan akumulasi poin SNBT.");
+            } else {
+                strategies.push("<b>Pendampingan Intensif:</b> Ikuti program bimbingan belajar tambahan dan klinik konsultasi mata pelajaran setiap minggunya.");
+                strategies.push("<b>Penguasaan Konsep Esensial:</b> Prioritaskan penguasaan materi-materi esensial yang sering keluar pada ujian nasional/SNBT.");
+            }
+
+            majorsContainer.innerHTML = recs.map((r, i) => `
+                <div class="flex items-start gap-1.5">
+                    <span class="w-4 h-4 rounded-full bg-sky-200 text-sky-800 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">${i+1}</span>
+                    <span class="font-bold text-slate-800">${r}</span>
+                </div>
+            `).join("");
+
+            strategyContainer.innerHTML = strategies.map(s => `
+                <div class="flex items-start gap-1.5">
+                    <span class="text-emerald-600 font-bold">✓</span>
+                    <div>${s}</div>
+                </div>
+            `).join("");
         }
 
         function printStudentReport() {
